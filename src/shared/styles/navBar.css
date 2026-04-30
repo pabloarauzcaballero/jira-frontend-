@@ -1,0 +1,13 @@
+.app-topbar {
+    height: var(--topbar-height);
+    border-bottom: 1px solid var(--app-border);
+    z-index: 1030;
+}
+
+.search-input {
+    width: 260px;
+    padding-left: 34px;
+    background: #f1f5f9;
+    border-color: transparent;
+    font-size: 13px;
+}

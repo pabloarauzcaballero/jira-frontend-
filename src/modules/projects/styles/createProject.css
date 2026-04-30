@@ -1,0 +1,331 @@
+.create-project-page {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  color: #091c35;
+}
+
+.create-project-header {
+  margin-bottom: 24px;
+}
+
+.create-project-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: #434654;
+  font-size: 12px;
+}
+
+.create-project-breadcrumb a {
+  color: #434654;
+  text-decoration: none;
+}
+
+.create-project-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.create-project-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.create-project-description {
+  margin: 4px 0 0;
+  color: #434654;
+  font-size: 14px;
+}
+
+.create-project-card {
+  background-color: #ffffff;
+  border: 1px solid #c3c6d6;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+}
+
+.create-project-card-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.create-project-section-title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.create-project-section-description {
+  margin: 0;
+  color: #434654;
+  font-size: 12px;
+}
+
+.create-project-label {
+  color: #434654;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-project-input {
+  border-color: #c3c6d6;
+  color: #091c35;
+  font-size: 14px;
+}
+
+.create-project-input:focus {
+  border-color: #003d9b;
+  box-shadow: 0 0 0 1px #003d9b;
+}
+
+.create-project-divider {
+  height: 1px;
+  width: 100%;
+  background-color: #c3c6d6;
+}
+
+.create-project-add-member {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.create-project-email-field {
+  position: relative;
+  flex: 1;
+}
+
+.create-project-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #737685;
+  font-size: 20px;
+  pointer-events: none;
+}
+
+.create-project-input-with-icon {
+  padding-left: 40px;
+}
+
+.create-project-role-select {
+  width: 160px;
+  border-color: #c3c6d6;
+  font-size: 14px;
+}
+
+.create-project-add-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #c3c6d6;
+  background-color: #d6e3ff;
+  color: #091c35;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-project-add-btn:hover {
+  background-color: #dfe8ff;
+}
+
+.create-project-member-list {
+  border: 1px solid #c3c6d6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.create-project-member-list-header {
+  display: grid;
+  grid-template-columns: 32px 1fr 120px 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f0f3ff;
+  border-bottom: 1px solid #c3c6d6;
+  color: #434654;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-project-member-item {
+  display: grid;
+  grid-template-columns: 32px 1fr 120px 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #c3c6d6;
+  transition: background-color 0.15s ease;
+}
+
+.create-project-member-item:last-child {
+  border-bottom: 0;
+}
+
+.create-project-member-item:hover {
+  background-color: #f9f9ff;
+}
+
+.create-project-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #c3c6d6;
+}
+
+.create-project-member-initials {
+  background-color: #709bfe;
+  color: #003179;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-project-member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.create-project-member-name {
+  color: #091c35;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.create-project-member-email {
+  color: #434654;
+  font-size: 12px;
+}
+
+.create-project-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.create-project-role-admin {
+  background-color: #dae2ff;
+  color: #001848;
+  text-transform: uppercase;
+}
+
+.create-project-role-editor {
+  color: #091c35;
+}
+
+.create-project-role-viewer {
+  color: #434654;
+}
+
+.create-project-role-default {
+  background-color: #f0f3ff;
+  color: #434654;
+}
+
+.create-project-remove-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #737685;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-project-remove-btn:hover {
+  background-color: #ffdad6;
+  color: #ba1a1a;
+}
+
+.create-project-empty-members {
+  padding: 16px;
+  color: #737685;
+  font-size: 14px;
+  text-align: center;
+}
+
+.create-project-actions {
+  padding: 16px 24px;
+  border-top: 1px solid #c3c6d6;
+  background-color: #f0f3ff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.create-project-cancel-btn {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #737685;
+  color: #091c35;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-project-cancel-btn:hover {
+  background-color: #d6e3ff;
+}
+
+.create-project-submit-btn {
+  height: 40px;
+  padding: 0 16px;
+  background-color: #0052cc;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-project-submit-btn:hover {
+  background-color: #003d9b;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .create-project-page {
+    padding: 16px;
+  }
+
+  .create-project-add-member {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .create-project-role-select {
+    width: 100%;
+  }
+
+  .create-project-member-list-header,
+  .create-project-member-item {
+    grid-template-columns: 32px 1fr 80px 32px;
+    padding: 8px 12px;
+  }
+
+  .create-project-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
