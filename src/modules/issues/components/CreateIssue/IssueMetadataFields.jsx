@@ -2,16 +2,16 @@ import TagsInput from "./TagsInputs";
 
 export default function IssueMetadataFields({
   status,
-  assignee,
-  priority,
-  tags,
+  prioridad,
+  acciones = [],
+  criteriosAceptacion = [],
   statuses = [],
   priorities = [],
   onChange,
 }) {
   return (
     <section>
-      <h2 className="create-issue-section-title">Details</h2>
+      <h2 className="create-issue-section-title">Datos compatibles con PostgreSQL</h2>
 
       <div className="create-issue-grid-2">
         <div>
@@ -34,15 +34,15 @@ export default function IssueMetadataFields({
         </div>
 
         <div>
-          <label className="create-issue-label" htmlFor="priority">
-            Priority
+          <label className="create-issue-label" htmlFor="prioridad">
+            Prioridad
           </label>
 
           <select
-            id="priority"
+            id="prioridad"
             className="form-select create-issue-input"
-            value={priority}
-            onChange={(event) => onChange("priority", event.target.value)}
+            value={prioridad}
+            onChange={(event) => onChange("prioridad", event.target.value)}
           >
             {priorities.map((currentPriority) => (
               <option key={currentPriority.value} value={currentPriority.value}>
@@ -51,32 +51,24 @@ export default function IssueMetadataFields({
             ))}
           </select>
         </div>
-
-        <div>
-          <label className="create-issue-label" htmlFor="assignee">
-            Assignee
-          </label>
-
-          <div className="create-issue-assignee">
-            <span className="material-symbols-outlined">person</span>
-
-            <input
-              id="assignee"
-              type="text"
-              placeholder="Search users..."
-              value={assignee}
-              onChange={(event) => onChange("assignee", event.target.value)}
-            />
-
-            <span className="material-symbols-outlined">search</span>
-          </div>
-        </div>
-
       </div>
 
       <TagsInput
-        tags={tags}
-        onChange={(newTags) => onChange("tags", newTags)}
+        label="Acciones del ticket"
+        inputId="acciones"
+        placeholder="Agregar acción y presionar Enter..."
+        tags={acciones}
+        onChange={(newActions) => onChange("acciones", newActions)}
+      />
+
+      <TagsInput
+        label="Criterios de aceptación"
+        inputId="criterios_aceptacion"
+        placeholder="Agregar criterio y presionar Enter..."
+        tags={criteriosAceptacion}
+        onChange={(newCriteria) =>
+          onChange("criterios_aceptacion", newCriteria)
+        }
       />
     </section>
   );

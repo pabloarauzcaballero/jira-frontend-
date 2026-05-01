@@ -1,7 +1,7 @@
 export default function DescriptionCard({ description }) {
   return (
     <article className="issue-card-panel">
-      <h2 className="issue-card-title">Description</h2>
+      <h2 className="issue-card-title">Descripción</h2>
 
       <div className="issue-description-content">
         {description.paragraphs?.map((paragraph, index) => (
@@ -9,17 +9,22 @@ export default function DescriptionCard({ description }) {
         ))}
 
         {description.points?.length > 0 && (
-          <ul>
-            {description.points.map((point, index) => (
-              <li key={index}>{point}</li>
-            ))}
-          </ul>
+          <>
+            <p>
+              <strong>Acciones:</strong>
+            </p>
+            <ul>
+              {description.points.map((point, index) => (
+                <li key={index}>{point}</li>
+              ))}
+            </ul>
+          </>
         )}
 
         {description.acceptanceCriteria?.length > 0 && (
           <>
             <p>
-              <strong>Acceptance Criteria:</strong>
+              <strong>Criterios de aceptación:</strong>
             </p>
 
             <ul>

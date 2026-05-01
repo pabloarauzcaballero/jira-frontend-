@@ -2,22 +2,22 @@ export default function CreateIssueHeader() {
   return (
     <header className="create-issue-header">
       <nav className="create-issue-breadcrumb">
-        <a href="#">Projects</a>
+        <a href="#">Proyectos</a>
 
         <span className="material-symbols-outlined">chevron_right</span>
 
-        <a href="#">PROJ-X</a>
+        <span>Ticket</span>
 
         <span className="material-symbols-outlined">chevron_right</span>
 
-        <span>Create Issue</span>
+        <span>Crear ticket</span>
       </nav>
 
       <h1 className="create-issue-title">
         <span className="create-issue-title-icon">
           <span className="material-symbols-outlined">task</span>
         </span>
-        Create Issue
+        Crear ticket
       </h1>
     </header>
   );

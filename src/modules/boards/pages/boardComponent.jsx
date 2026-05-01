@@ -1,12 +1,29 @@
 import "../styles/board.css";
 import BoardHeader from "../components/boardHeader";
 import BoardBody from "../components/boardBody";
+import { BoardProvider } from "../context/BoardContext";
 
-export default function BoardComponent({ teamProfiles, toDoIssues, inProgressIssues, doneIssues }) {
-    return(
-        <div className="board-page">
-            <BoardHeader teamProfiles={teamProfiles} />
-            <BoardBody toDoIssues={toDoIssues} inProgressIssues={inProgressIssues} doneIssues={doneIssues} />
-        </div>
-    );
+function BoardContent() {
+  return (
+    <div className="board-page">
+      <BoardHeader />
+      <BoardBody />
+    </div>
+  );
+}
+
+export default function BoardComponent({
+  teamProfiles = [],
+  statuses = [],
+  ticketsByStatus = {},
+}) {
+  return (
+    <BoardProvider
+      teamProfiles={teamProfiles}
+      statuses={statuses}
+      ticketsByStatus={ticketsByStatus}
+    >
+      <BoardContent />
+    </BoardProvider>
+  );
 }

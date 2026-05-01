@@ -1,4 +1,9 @@
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { useProfileContext } from "../context/ProfileContext";
+
 export default function SecurityCard({ security }) {
+  const { actions, profileData } = useProfileContext();
+
   return (
     <article className="profile-card">
       <h3 className="profile-card-title">
@@ -9,32 +14,25 @@ export default function SecurityCard({ security }) {
       <div className="profile-security-row">
         <div>
           <p className="profile-security-title">Two-Factor Auth</p>
-          <p className="profile-security-description">
-            {security.twoFactorLabel}
-          </p>
+          <p className="profile-security-description">{security.twoFactorLabel}</p>
         </div>
 
-        <button
-          type="button"
-          className={`profile-toggle ${
-            security.twoFactorEnabled ? "active" : ""
-          }`}
-          aria-label="Two factor authentication"
+        <div
+          className={`profile-toggle ${security.twoFactorEnabled ? "active" : ""}`}
+          role="status"
+          aria-label="Estado actual de Two-Factor Auth"
         >
           <span></span>
-        </button>
+        </div>
       </div>
 
       <div className="d-flex flex-column gap-2 mt-3">
-        {security.actions?.map((action) => (
-          <button
-            key={action}
-            type="button"
-            className="profile-link-button"
-          >
-            {action}
-          </button>
-        ))}
+        <ButtonActionGroup
+          actions={actions.security}
+          contextPayload={profileData.user}
+          className="d-flex flex-column gap-2"
+          defaultButtonClassName="profile-link-button"
+        />
       </div>
     </article>
   );

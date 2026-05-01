@@ -1,36 +1,40 @@
 import GeneralDetailsSection from "./GeneralDetailsSection";
 import TeamMembersSection from "./TeamMembersSection";
 import FormActions from "./FormActions";
+import { useCreateProjectContext } from "../context/CreateProjectContext";
 
-export default function ProjectFormCard({
-  projectData,
-  members,
-  roles,
-  onProjectChange,
-  onAddMember,
-  onRemoveMember,
-  onSubmit,
-  onCancel,
-}) {
+export default function ProjectFormCard() {
+  const {
+    projectData,
+    members,
+    users,
+    estadoRegistroOptions,
+    handleProjectChange,
+    handleAddMember,
+    handleRemoveMember,
+    actions,
+  } = useCreateProjectContext();
+
   return (
     <article className="create-project-card">
       <div className="create-project-card-body">
         <GeneralDetailsSection
           projectData={projectData}
-          onProjectChange={onProjectChange}
+          estadoRegistroOptions={estadoRegistroOptions}
+          onProjectChange={handleProjectChange}
         />
 
         <div className="create-project-divider"></div>
 
         <TeamMembersSection
           members={members}
-          roles={roles}
-          onAddMember={onAddMember}
-          onRemoveMember={onRemoveMember}
+          users={users}
+          onAddMember={handleAddMember}
+          onRemoveMember={handleRemoveMember}
         />
       </div>
 
-      <FormActions onSubmit={onSubmit} onCancel={onCancel} />
+      <FormActions actions={actions.form} contextPayload={projectData} />
     </article>
   );
 }

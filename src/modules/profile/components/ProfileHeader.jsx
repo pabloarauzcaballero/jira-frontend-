@@ -1,4 +1,9 @@
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { useProfileContext } from "../context/ProfileContext";
+
 export default function ProfileHeader({ title, description }) {
+  const { actions, profileData } = useProfileContext();
+
   return (
     <header className="profile-header">
       <div className="profile-breadcrumb">
@@ -13,10 +18,7 @@ export default function ProfileHeader({ title, description }) {
           <p className="profile-description">{description}</p>
         </div>
 
-        <button className="btn btn-sm btn-primary d-flex align-items-center gap-1">
-          <span className="material-symbols-outlined">edit</span>
-          Edit Profile
-        </button>
+        <ButtonActionGroup actions={actions.header} contextPayload={profileData.user} className="d-flex" />
       </div>
     </header>
   );

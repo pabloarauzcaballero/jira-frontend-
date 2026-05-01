@@ -1,21 +1,27 @@
-export default function BoardHeader({ teamProfiles = [] }) {
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { useBoardContext } from "../context/BoardContext";
+
+export default function BoardHeader() {
+  const { teamProfiles, totalTickets, actions } = useBoardContext();
   const batchProfile = teamProfiles.slice(0, 3);
 
   return (
     <section className="mb-4 flex-shrink-0">
       <div className="d-flex align-items-center gap-1 text-secondary small fw-semibold mb-2">
         <span>Tickets</span>
-        <span
-          className="material-symbols-outlined"
-          style={{ fontSize: "16px" }}
-        >
+        <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
           chevron_right
         </span>
-        <span>Mis tickets</span>
+        <span>Tablero sincronizado</span>
       </div>
 
       <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-end gap-3">
-        <h1 className="h4 fw-bold mb-0">Mis Tickets</h1>
+        <div>
+          <h1 className="h4 fw-bold mb-1">Mis Tickets</h1>
+          <p className="text-secondary mb-0 small">
+            Columnas generadas desde el CHECK de ticket.status. Total: {totalTickets} tickets.
+          </p>
+        </div>
 
         <div className="d-flex flex-wrap align-items-center gap-2">
           <div className="d-flex me-2">
@@ -24,8 +30,8 @@ export default function BoardHeader({ teamProfiles = [] }) {
                 key={profile.id ?? index}
                 className="avatar"
                 style={{ marginRight: "-8px" }}
-                alt="Assignee"
-                src={profile.profileHeader}
+                alt={profile.name ?? "Usuario asignado"}
+                src={profile.profileHeader ?? profile.urlProfile}
               />
             ))}
 
@@ -39,21 +45,7 @@ export default function BoardHeader({ teamProfiles = [] }) {
             )}
           </div>
 
-          <button className="btn btn-sm btn-light border">Solo mis tickets</button>
-
-          <button className="btn btn-sm btn-light border d-flex align-items-center gap-1">
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: "16px" }}
-            >
-              filter_list
-            </span>
-            Filtros
-          </button>
-
-          <div className="vr mx-1 d-none d-md-block"></div>
-
-          <button className="btn btn-sm btn-primary px-3">Create ticket</button>
+          <ButtonActionGroup actions={actions.header} />
         </div>
       </div>
     </section>

@@ -170,3 +170,10 @@
 
   border: 1px solid var(--app-border);
 }
+.kanban-empty-state {
+  border: 1px dashed var(--app-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}

@@ -1,19 +1,12 @@
 import AddCommentBox from "./AddCommentBox";
 import ActivityItem from "./ActivityItem";
 
-export default function ActivityCard({
-  currentUser,
-  activities = [],
-  onPostComment,
-}) {
+export default function ActivityCard({ currentUser, activities = [] }) {
   return (
     <article className="issue-card-panel">
-      <h2 className="issue-card-title">Activity</h2>
+      <h2 className="issue-card-title">Actualizaciones</h2>
 
-      <AddCommentBox
-        currentUser={currentUser}
-        onPostComment={onPostComment}
-      />
+      <AddCommentBox currentUser={currentUser} />
 
       <div className="issue-activity-list">
         {activities.map((activity) => (

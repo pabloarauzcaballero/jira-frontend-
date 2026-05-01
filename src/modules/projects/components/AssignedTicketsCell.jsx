@@ -20,7 +20,7 @@ export default function AssignedTicketsCell({ tickets = [] }) {
     <div className="d-flex flex-wrap align-items-center gap-1">
       {visibleTickets.map((ticket, index) => {
         const ticketKey = ticket.id ?? ticket.url ?? ticket.nombre ?? index;
-        const ticketName = ticket.nombre ?? `Ticket ${ticket.id ?? index + 1}`;
+        const ticketName = ticket.nombre ?? `TCK-${ticket.id ?? index + 1}`;
         const ticketUrl = ticket.url ?? "#";
 
         return (
@@ -29,7 +29,7 @@ export default function AssignedTicketsCell({ tickets = [] }) {
             href={ticketUrl}
             target="_blank"
             rel="noreferrer"
-            title={ticketName}
+            title={ticket.descripcion ?? ticketName}
             className="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 project-members-ticket-btn"
           >
             {ticketName}

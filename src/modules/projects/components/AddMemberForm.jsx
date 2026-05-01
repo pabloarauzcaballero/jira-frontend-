@@ -1,77 +1,83 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-function inferNameFromEmail(email) {
-  const localPart = email.split("@")[0] || "User";
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
 
-  return localPart
-    .replace(/[._-]/g, " ")
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word[0].toUpperCase() + word.slice(1))
-    .join(" ");
-}
+export default function AddMemberForm({
+  users = [],
+  onAddMember,
+  selectedUserId,
+  onSelectedUserIdChange,
+  actions = [],
+  buttonLabel = "Agregar",
+}) {
+  const firstUserValue = useMemo(() => users[0]?.value || "", [users]);
+  const [localIdUsuario, setLocalIdUsuario] = useState(firstUserValue);
+  const idUsuario = selectedUserId ?? localIdUsuario;
 
-export default function AddMemberForm({ roles = [], onAddMember }) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState(roles[0] || "Viewer");
+  function updateSelectedUserId(nextValue) {
+    if (typeof onSelectedUserIdChange === "function") {
+      onSelectedUserIdChange(nextValue);
+      return;
+    }
+
+    setLocalIdUsuario(nextValue);
+  }
 
   function handleAddMember() {
-    const cleanEmail = email.trim();
+    if (!idUsuario) return;
 
-    if (!cleanEmail) return;
-
-    onAddMember({
-      nombre: inferNameFromEmail(cleanEmail),
-      email: cleanEmail,
-      rol: role,
-      urlProfile: "",
-    });
-
-    setEmail("");
-    setRole(roles[0] || "Viewer");
+    onAddMember?.(Number(idUsuario));
+    updateSelectedUserId(firstUserValue);
   }
 
   return (
-    <div className="create-project-add-member">
+    <div className="create-project-add-member project-members-add-member-form">
       <div className="create-project-email-field">
         <span className="material-symbols-outlined create-project-input-icon">
-          mail
+          person
         </span>
 
-        <input
-          type="email"
-          className="form-control create-project-input create-project-input-with-icon"
-          placeholder="colleague@company.com"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
+        <select
+          className="form-select create-project-input create-project-input-with-icon"
+          value={idUsuario}
+          onChange={(event) => updateSelectedUserId(event.target.value)}
+          disabled={users.length === 0}
+        >
+          {users.length === 0 ? (
+            <option value="">No hay usuarios disponibles</option>
+          ) : (
+            users.map((user) => (
+              <option key={user.value} value={user.value}>
+                {user.label}
+              </option>
+            ))
+          )}
+        </select>
       </div>
 
-      <select
-        className="form-select create-project-role-select"
-        value={role}
-        onChange={(event) => setRole(event.target.value)}
-      >
-        {roles.map((currentRole) => (
-          <option key={currentRole} value={currentRole}>
-            {currentRole}
-          </option>
-        ))}
-      </select>
-
-      <button
-        type="button"
-        className="btn create-project-add-btn"
-        onClick={handleAddMember}
-      >
-        <span
-          className="material-symbols-outlined"
-          style={{ fontSize: "18px" }}
+      {actions.length > 0 ? (
+        <ButtonActionGroup
+          actions={actions}
+          contextPayload={{ id_usuario: idUsuario }}
+          className="d-flex gap-2"
+          defaultButtonClassName="btn create-project-add-btn"
+        />
+      ) : (
+        <button
+          type="button"
+          className="btn create-project-add-btn"
+          onClick={handleAddMember}
+          disabled={!idUsuario}
         >
-          add
-        </span>
-        Add
-      </button>
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: "18px" }}
+          >
+            add
+          </span>
+          {buttonLabel}
+        </button>
+      )}
     </div>
   );
 }

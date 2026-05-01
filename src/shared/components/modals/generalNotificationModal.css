@@ -1,0 +1,85 @@
+.general-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.general-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 28, 53, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.general-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(540px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--app-border, #d6dbea);
+  border-radius: 18px;
+  background: var(--app-surface, #ffffff);
+}
+
+.general-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--app-border, #d6dbea);
+}
+
+.modal-header-success {
+  background: #f0fff6;
+}
+
+.modal-header-error {
+  background: #fff3f3;
+}
+
+.modal-header-warning {
+  background: #fff9e8;
+}
+
+.modal-header-info,
+.modal-header-confirm {
+  background: #f0f5ff;
+}
+
+.general-modal-close {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.general-modal-close .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.general-modal-body {
+  padding: 1.15rem;
+}
+
+.general-modal-details {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--app-border, #d6dbea);
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #f8f9fc;
+  color: #263143;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+}
+
+.general-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.9rem 1.15rem 1.15rem;
+}

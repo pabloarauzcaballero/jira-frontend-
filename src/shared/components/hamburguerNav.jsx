@@ -1,40 +1,49 @@
 import "../styles/hamburguerNav.css";
 
-export default function HamburguerNav() {
+const navigationItems = [
+  { key: "projects", icon: "inventory_2", label: "Proyectos" },
+  { key: "board", icon: "view_kanban", label: "Tablero" },
+  { key: "create-issue", icon: "add_task", label: "Crear ticket" },
+  { key: "issue-detail", icon: "bug_report", label: "Detalle ticket" },
+  { key: "project-members", icon: "groups", label: "Asignaciones" },
+  { key: "create-project", icon: "add_box", label: "Crear proyecto" },
+];
+
+export default function HamburguerNav({ activeView = "board", onNavigate }) {
   return (
     <aside className="app-sidebar d-flex flex-column py-3">
       <nav className="flex-grow-1">
-        <a className="sidebar-link" href="#">
-          <span className="material-symbols-outlined">inventory_2</span>
-          <span className="sidebar-label">Projects</span>
-        </a>
-
-        <a className="sidebar-link" href="#">
-          <span className="material-symbols-outlined">bug_report</span>
-          <span className="sidebar-label">Issues</span>
-        </a>
-
-        <a className="sidebar-link active" href="#">
-          <span
-            className="material-symbols-outlined"
-            style={{ fontVariationSettings: "'FILL' 1" }}
+        {navigationItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={`sidebar-link ${activeView === item.key ? "active" : ""}`}
+            onClick={() => onNavigate?.(item.key)}
           >
-            view_kanban
-          </span>
-          <span className="sidebar-label">Boards</span>
-        </a>
-
-        <a className="sidebar-link" href="#">
-          <span className="material-symbols-outlined">analytics</span>
-          <span className="sidebar-label">Reports</span>
-        </a>
+            <span
+              className="material-symbols-outlined"
+              style={
+                activeView === item.key
+                  ? { fontVariationSettings: "'FILL' 1" }
+                  : undefined
+              }
+            >
+              {item.icon}
+            </span>
+            <span className="sidebar-label">{item.label}</span>
+          </button>
+        ))}
       </nav>
 
       <nav className="border-top pt-2">
-        <a className="sidebar-link" href="#">
+        <button
+          type="button"
+          className={`sidebar-link ${activeView === "profile" ? "active" : ""}`}
+          onClick={() => onNavigate?.("profile")}
+        >
           <span className="material-symbols-outlined">settings</span>
-          <span className="sidebar-label">Settings</span>
-        </a>
+          <span className="sidebar-label">Perfil</span>
+        </button>
       </nav>
     </aside>
   );

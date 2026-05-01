@@ -1,21 +1,11 @@
-export default function FormActions({ onSubmit, onCancel }) {
-  return (
-    <footer className="create-project-actions">
-      <button
-        type="button"
-        className="btn create-project-cancel-btn"
-        onClick={onCancel}
-      >
-        Cancel
-      </button>
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
 
-      <button
-        type="button"
-        className="btn create-project-submit-btn"
-        onClick={onSubmit}
-      >
-        Create Project
-      </button>
-    </footer>
+export default function FormActions({ actions = [], contextPayload = {} }) {
+  return (
+    <ButtonActionGroup
+      actions={actions}
+      contextPayload={contextPayload}
+      className="create-project-actions"
+    />
   );
 }

@@ -12,14 +12,14 @@ export default function MemberListItem({ member, onRemoveMember }) {
       </div>
 
       <div>
-        <RoleBadge rol={member.rol} />
+        <RoleBadge rol={member.posicion_principal ?? member.rol} />
       </div>
 
       <button
         type="button"
         className="create-project-remove-btn"
-        title="Remove user"
-        onClick={() => onRemoveMember(member.id)}
+        title="Quitar usuario"
+        onClick={() => onRemoveMember(member.id_usuario ?? member.id)}
       >
         <span
           className="material-symbols-outlined"

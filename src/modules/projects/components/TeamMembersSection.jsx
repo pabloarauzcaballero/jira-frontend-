@@ -3,21 +3,21 @@ import MemberList from "./MemberList";
 
 export default function TeamMembersSection({
   members,
-  roles,
+  users,
   onAddMember,
   onRemoveMember,
 }) {
   return (
     <section>
       <div className="mb-3">
-        <h2 className="create-project-section-title mb-1">Team Members</h2>
+        <h2 className="create-project-section-title mb-1">Usuarios relacionados</h2>
 
         <p className="create-project-section-description">
-          Invite users via email. They will receive a notification.
+          Vista previa de usuarios existentes en la tabla usuarios. La asignación persistente requiere id_ticket, id_proyecto e id_usuario en proyecto_asignacion.
         </p>
       </div>
 
-      <AddMemberForm roles={roles} onAddMember={onAddMember} />
+      <AddMemberForm users={users} onAddMember={onAddMember} />
 
       <MemberList members={members} onRemoveMember={onRemoveMember} />
     </section>

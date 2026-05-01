@@ -1,18 +1,18 @@
+import ButtonActionGroup from "../../../../shared/components/actions/ButtonActionGroup";
 import IssueActionBar from "./IssueActionBar";
+import { useIssueDetailContext } from "../../context/IssueDetailContext";
 
-export default function IssueDetailHeader({
-  issue,
-  onEdit,
-  onDelete,
-  onChangeStatus,
-}) {
+export default function IssueDetailHeader() {
+  const { issue, actions } = useIssueDetailContext();
+
   return (
     <header className="issue-detail-header">
       <div className="issue-detail-breadcrumb">
-        <button type="button" className="issue-detail-back-btn">
-          <span className="material-symbols-outlined">arrow_back</span>
-          Back
-        </button>
+        <ButtonActionGroup
+          actions={actions.navigation}
+          contextPayload={issue}
+          className="d-inline-flex"
+        />
 
         <span>/</span>
         <a href="#">{issue.workspace}</a>
@@ -32,11 +32,7 @@ export default function IssueDetailHeader({
           </div>
         </div>
 
-        <IssueActionBar
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onChangeStatus={onChangeStatus}
-        />
+        <IssueActionBar />
       </div>
     </header>
   );

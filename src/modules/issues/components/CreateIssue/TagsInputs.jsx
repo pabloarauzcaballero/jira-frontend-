@@ -1,6 +1,12 @@
 import { useState } from "react";
 
-export default function TagsInput({ tags = [], onChange }) {
+export default function TagsInput({
+  tags = [],
+  onChange,
+  label = "Valores",
+  inputId = "dynamic-values",
+  placeholder = "Agregar valor...",
+}) {
   const [currentTag, setCurrentTag] = useState("");
 
   function handleAddTag(event) {
@@ -22,8 +28,8 @@ export default function TagsInput({ tags = [], onChange }) {
 
   return (
     <div className="mt-3">
-      <label className="create-issue-label" htmlFor="labels">
-        Tags
+      <label className="create-issue-label" htmlFor={inputId}>
+        {label}
       </label>
 
       <div className="create-issue-tags-box">
@@ -38,9 +44,9 @@ export default function TagsInput({ tags = [], onChange }) {
         ))}
 
         <input
-          id="labels"
+          id={inputId}
           type="text"
-          placeholder="Add tag..."
+          placeholder={placeholder}
           value={currentTag}
           onChange={(event) => setCurrentTag(event.target.value)}
           onKeyDown={handleAddTag}

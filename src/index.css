@@ -39,3 +39,21 @@ body {
   flex-direction: column;
 }
 
+
+.app-sync-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--app-muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.app-sync-alert .material-symbols-outlined {
+  color: var(--app-primary);
+  font-size: 18px;
+}

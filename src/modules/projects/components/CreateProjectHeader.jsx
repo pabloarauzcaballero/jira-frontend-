@@ -2,7 +2,7 @@ export default function CreateProjectHeader() {
   return (
     <header className="create-project-header">
       <nav aria-label="breadcrumb" className="create-project-breadcrumb">
-        <a href="#">Projects</a>
+        <a href="#">Proyectos</a>
 
         <span
           className="material-symbols-outlined"
@@ -11,13 +11,13 @@ export default function CreateProjectHeader() {
           chevron_right
         </span>
 
-        <span>Create new</span>
+        <span>Crear nuevo</span>
       </nav>
 
-      <h1 className="create-project-title">Create Project</h1>
+      <h1 className="create-project-title">Crear proyecto</h1>
 
       <p className="create-project-description">
-        Configure your new workspace and add initial team members.
+        El DDL de proyecto solo exige descripción, estado, auditoría y versión. Los usuarios se vinculan después mediante proyecto_asignacion.
       </p>
     </header>
   );

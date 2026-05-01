@@ -1,10 +1,12 @@
-export default function ProjectStatusBadge({ status = "Active" }) {
-  const normalizedStatus = status.toLowerCase();
+import { formatDbLabel } from "../../../shared/data/databaseOptions.js";
+
+export default function ProjectStatusBadge({ status = "ACTIVO" }) {
+  const normalizedStatus = String(status).toUpperCase();
 
   const statusClass = {
-    active: "project-status-active",
-    "on hold": "project-status-hold",
-    archived: "project-status-archived",
+    ACTIVO: "project-status-active",
+    INACTIVO: "project-status-hold",
+    ELIMINADO: "project-status-archived",
   };
 
   return (
@@ -13,7 +15,7 @@ export default function ProjectStatusBadge({ status = "Active" }) {
         statusClass[normalizedStatus] ?? "project-status-default"
       }`}
     >
-      {status}
+      {formatDbLabel(status)}
     </span>
   );
 }

@@ -2,31 +2,31 @@ import "../styles/projects.css";
 
 import ProjectsHeader from "../components/ProjectsHeader";
 import ProjectSection from "../components/ProjectSection";
+import { ProjectsProvider, useProjectsContext } from "../context/ProjectsContext";
 
-export default function ProjectsPage({
-  currentProjects = [],
-  recentProjects = [],
-}) {
-  const totalProjects = currentProjects.length + recentProjects.length;
+function ProjectsContent() {
+  const { currentProjects, recentProjects } = useProjectsContext();
 
   return (
     <section className="projects-page">
-      <ProjectsHeader
-        totalProjects={totalProjects}
-      />
+      <ProjectsHeader />
+
+      <ProjectSection title="Proyectos activos" icon="workspaces" projects={currentProjects} />
 
       <ProjectSection
-        title="Workspace actual"
-        icon="workspaces"
-        projects={currentProjects}
-      />
-
-      <ProjectSection
-        title="Proyectos recientes"
+        title="Proyectos inactivos o históricos"
         icon="history"
         projects={recentProjects}
         muted
       />
     </section>
+  );
+}
+
+export default function ProjectsPage({ currentProjects = [], recentProjects = [] }) {
+  return (
+    <ProjectsProvider currentProjects={currentProjects} recentProjects={recentProjects}>
+      <ProjectsContent />
+    </ProjectsProvider>
   );
 }

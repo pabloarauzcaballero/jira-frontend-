@@ -13,7 +13,7 @@ export default function StatusAssigneeCard({ status, assignee }) {
       <div className="issue-side-divider" />
 
       <div className="issue-side-block">
-        <div className="issue-side-label">Assignee</div>
+        <div className="issue-side-label">Usuario asignado</div>
 
         <div className="issue-assignee">
           <img

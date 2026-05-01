@@ -5,19 +5,15 @@ import ProfileSummaryCard from "../components/ProfileSummaryCard";
 import SecurityCard from "../components/SecurityCard";
 import AccountDetailsCard from "../components/AccountDetailsCard";
 import RecentActivityCard from "../components/RecentActivityCard";
+import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
 
-export default function UserProfilePage({
-  user,
-  security,
-  accountDetails,
-  activities = [],
-}) {
+function ProfileContent() {
+  const { profileData } = useProfileContext();
+  const { user, security, accountDetails, activities = [] } = profileData;
+
   return (
     <section className="profile-page">
-      <ProfileHeader
-        title="User Profile"
-        description="Manage personal information and security settings."
-      />
+      <ProfileHeader title="User Profile" description="Manage personal information and security settings." />
 
       <div className="row g-3">
         <div className="col-12 col-lg-4">
@@ -35,5 +31,13 @@ export default function UserProfilePage({
         </div>
       </div>
     </section>
+  );
+}
+
+export default function UserProfilePage(props) {
+  return (
+    <ProfileProvider profileData={props}>
+      <ProfileContent />
+    </ProfileProvider>
   );
 }

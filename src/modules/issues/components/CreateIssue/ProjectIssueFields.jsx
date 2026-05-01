@@ -1,22 +1,22 @@
 export default function ProjectIssueFields({
-  project,
-  issueType,
+  idProyecto,
+  idUsuario,
   projects = [],
-  issueTypes = [],
+  users = [],
   onChange,
 }) {
   return (
     <section className="create-issue-grid-2">
       <div>
-        <label className="create-issue-label" htmlFor="project">
-          Project <span className="text-danger">*</span>
+        <label className="create-issue-label" htmlFor="id_proyecto">
+          Proyecto <span className="text-danger">*</span>
         </label>
 
         <select
-          id="project"
+          id="id_proyecto"
           className="form-select create-issue-input"
-          value={project}
-          onChange={(event) => onChange("project", event.target.value)}
+          value={idProyecto}
+          onChange={(event) => onChange("id_proyecto", event.target.value)}
         >
           {projects.map((currentProject) => (
             <option key={currentProject.value} value={currentProject.value}>
@@ -27,19 +27,19 @@ export default function ProjectIssueFields({
       </div>
 
       <div>
-        <label className="create-issue-label" htmlFor="issueType">
-          Issue Type <span className="text-danger">*</span>
+        <label className="create-issue-label" htmlFor="id_usuario">
+          Usuario asignado <span className="text-danger">*</span>
         </label>
 
         <select
-          id="issueType"
+          id="id_usuario"
           className="form-select create-issue-input"
-          value={issueType}
-          onChange={(event) => onChange("issueType", event.target.value)}
+          value={idUsuario}
+          onChange={(event) => onChange("id_usuario", event.target.value)}
         >
-          {issueTypes.map((type) => (
-            <option key={type.value} value={type.value}>
-              {type.label}
+          {users.map((user) => (
+            <option key={user.value} value={user.value}>
+              {user.label}
             </option>
           ))}
         </select>

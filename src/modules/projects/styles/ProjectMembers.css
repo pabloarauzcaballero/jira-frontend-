@@ -406,3 +406,51 @@
     padding: 12px 16px;
   }
 }
+.project-members-search-box {
+  min-width: 220px;
+}
+
+.project-members-inline-form {
+  padding: 16px 24px;
+}
+
+.project-members-add-member-form {
+  margin-bottom: 0;
+}
+
+.project-members-edit-row td {
+  background-color: #f9f9ff;
+}
+
+.project-members-edit-panel {
+  border: 1px solid #d6dbea;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 16px;
+}
+
+.project-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.project-status-active {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+
+.project-status-hold {
+  background-color: #fff4e5;
+  color: #a15c00;
+}
+
+.project-status-archived,
+.project-status-default {
+  background-color: #f1f3f4;
+  color: #5f6368;
+}

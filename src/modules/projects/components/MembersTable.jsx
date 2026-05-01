@@ -1,11 +1,9 @@
 import MemberRow from "./MemberRow";
+import { useProjectMembersContext } from "../context/ProjectMembersContext";
 
-export default function MembersTable({
-  members = [],
-  onDesvincular,
-  onUnlinkMember,
-  onAddRequest,
-}) {
+export default function MembersTable() {
+  const { filteredMembers } = useProjectMembersContext();
+
   return (
     <div className="table-responsive">
       <table className="table table-hover align-middle mb-0">
@@ -13,26 +11,21 @@ export default function MembersTable({
           <tr>
             <th>Nombre</th>
             <th>Rol</th>
+            <th>Estado</th>
             <th>Tickets asignados</th>
             <th className="text-end">Acciones</th>
           </tr>
         </thead>
 
         <tbody>
-          {members.length > 0 ? (
-            members.map((member, index) => (
-              <MemberRow
-                key={member.id ?? member.nombre ?? index}
-                member={member}
-                onDesvincular={onDesvincular}
-                onUnlinkMember={onUnlinkMember}
-                onAddRequest={onAddRequest}
-              />
+          {filteredMembers.length > 0 ? (
+            filteredMembers.map((member, index) => (
+              <MemberRow key={member.id ?? member.nombre ?? index} member={member} />
             ))
           ) : (
             <tr>
-              <td colSpan="4" className="text-center text-secondary py-4">
-                No hay miembros registrados.
+              <td colSpan="5" className="text-center text-secondary py-4">
+                No se encontraron miembros con ese criterio de búsqueda.
               </td>
             </tr>
           )}

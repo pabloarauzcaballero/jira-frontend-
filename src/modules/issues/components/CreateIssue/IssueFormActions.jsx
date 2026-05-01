@@ -1,13 +1,11 @@
-export default function IssueFormActions({ onSubmit, onCancel }) {
-  return (
-    <div className="create-issue-actions">
-      <button type="button" className="btn create-issue-cancel-btn" onClick={onCancel}>
-        Cancel
-      </button>
+import ButtonActionGroup from "../../../../shared/components/actions/ButtonActionGroup";
 
-      <button type="button" className="btn create-issue-submit-btn" onClick={onSubmit}>
-        Create Issue
-      </button>
-    </div>
+export default function IssueFormActions({ actions = [], contextPayload = {} }) {
+  return (
+    <ButtonActionGroup
+      actions={actions}
+      contextPayload={contextPayload}
+      className="create-issue-actions"
+    />
   );
 }
