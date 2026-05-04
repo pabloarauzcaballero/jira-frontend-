@@ -1,13 +1,13 @@
-export default function ProjectHeader({
-  projectName = "Proyecto sin nombre",
-  projectDescription = "Sin descripción del proyecto.",
-}) {
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { useProjectMembersContext } from "../context/ProjectMembersContext";
+
+export default function ProjectHeader() {
+  const { project, projectName, projectDescription, actions, onEditProject } = useProjectMembersContext();
+
   return (
     <section className="mb-4 main-header-container">
       <div className="d-flex align-items-center text-secondary small mb-2">
-        <a href="#" className="text-decoration-none text-secondary">
-          Proyectos
-        </a>
+        <span>Proyectos</span>
 
         <span
           className="material-symbols-outlined mx-1"
@@ -22,32 +22,24 @@ export default function ProjectHeader({
       <div className="inner-header">
         <h1 className="h4 fw-bold mb-0">{projectName}</h1>
 
-        <div className="d-flex flex-row gap-2">
-          <button
-            type="button"
-            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: "16px" }}
-            >
-              person_add
-            </span>
-            Añadir miembro
-          </button>
+        <div className="d-flex flex-row gap-2 flex-wrap">
+          <ButtonActionGroup actions={actions.header} />
 
-          <button
-            type="button"
-            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: "16px" }}
+          {typeof onEditProject === "function" && project && (
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+              onClick={() => onEditProject(project)}
             >
-              update
-            </span>
-            Modificar proyecto
-          </button>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "16px" }}
+              >
+                edit
+              </span>
+              Editar proyecto
+            </button>
+          )}
         </div>
       </div>
 

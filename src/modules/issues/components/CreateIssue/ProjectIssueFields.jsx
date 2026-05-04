@@ -36,7 +36,7 @@ export default function ProjectIssueFields({
           onChange={(event) => onChange("id_usuario", event.target.value)}
         >
           {users.length === 0 ? (
-            <option value="">Sin usuarios disponibles</option>
+            <option value="">Sin miembros asignados al proyecto</option>
           ) : (
             users.map((user) => (
               <option key={user.value} value={user.value}>

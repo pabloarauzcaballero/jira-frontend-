@@ -38,7 +38,7 @@ function readStoredSession() {
     }
 
     return storedSession;
-  } catch (_error) {
+  } catch {
     return {};
   }
 }
@@ -49,8 +49,10 @@ function persistSession(session) {
 
     if (session?.auth?.accessToken) {
       window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, session.auth.accessToken);
+    } else {
+      window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
     }
-  } catch (_error) {
+  } catch {
     // Local storage can fail in private mode. The app still works in memory.
   }
 }
@@ -98,7 +100,7 @@ function buildDefaultSession(initialSession = {}) {
     },
     ui: {
       sidebarCollapsed: false,
-      activeView: "signup",
+      activeView: "login",
     },
     endpoints: API_ENDPOINTS,
     lastSyncAt: null,
@@ -152,10 +154,22 @@ export function SessionProvider({ children, initialSession = {} }) {
         auth: {
           ...currentSession.auth,
           isAuthenticated: Boolean(user),
-          accessToken: authPayload.accessToken ?? currentSession.auth.accessToken,
-          refreshToken: authPayload.refreshToken ?? currentSession.auth.refreshToken,
-          csrfToken: authPayload.csrfToken ?? currentSession.auth.csrfToken,
-          sessionId: authPayload.sessionId ?? currentSession.auth.sessionId,
+          accessToken:
+            Object.prototype.hasOwnProperty.call(authPayload, "accessToken")
+              ? authPayload.accessToken
+              : currentSession.auth.accessToken,
+          refreshToken:
+            Object.prototype.hasOwnProperty.call(authPayload, "refreshToken")
+              ? authPayload.refreshToken
+              : currentSession.auth.refreshToken,
+          csrfToken:
+            Object.prototype.hasOwnProperty.call(authPayload, "csrfToken")
+              ? authPayload.csrfToken
+              : currentSession.auth.csrfToken,
+          sessionId:
+            Object.prototype.hasOwnProperty.call(authPayload, "sessionId")
+              ? authPayload.sessionId
+              : currentSession.auth.sessionId,
         },
         currentUser: user,
         preferences: {

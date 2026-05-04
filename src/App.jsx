@@ -42,21 +42,26 @@ import {
   clearAccessToken,
   loginRequest,
   logoutRequest,
+  meRequest,
   normalizeAuthResponse,
   persistAccessToken,
+  refreshSessionRequest,
   signupRequest,
 } from "./shared/services/authService";
 import {
   addProyectoMiembro,
   createProyecto,
   createTicket,
+  createTicketUpdate,
   getTicket,
   listProyectoMiembros,
   listProyectos,
   listTicketsByProyecto,
   listUsuarios,
   removeProyectoMiembro,
+  updateProyecto,
   updateProyectoMiembro,
+  updateUsuario,
 } from "./shared/services/jiraApiService";
 
 const APP_NAME = "Mini Issue Tracker";
@@ -96,7 +101,8 @@ function getActiveView(pathname = "") {
   if (pathname.startsWith("/profile")) return "profile";
   if (pathname.startsWith("/board")) return "board";
   if (pathname.startsWith("/login")) return "login";
-  return "signup";
+  if (pathname.startsWith("/signup")) return "signup";
+  return "login";
 }
 
 function getIdProyecto(proyecto = {}) {
@@ -107,14 +113,14 @@ function getIdTicket(ticket = {}) {
   return ticket.id_ticket ?? ticket.id;
 }
 
-function AppLayout({ onNavigate, isLoading = false }) {
+function AppLayout({ onNavigate, onLogout, isLoading = false }) {
   const location = useLocation();
   const activeView = getActiveView(location.pathname);
 
   return (
     <>
       <NavBar />
-      <HamburguerNav activeView={activeView} onNavigate={onNavigate} />
+      <HamburguerNav activeView={activeView} onNavigate={onNavigate} onLogout={onLogout} />
       <main className="app-main">
         {isLoading && (
           <div className="app-loading-strip">
@@ -132,18 +138,26 @@ function AppLayout({ onNavigate, isLoading = false }) {
   );
 }
 
-function ProtectedRoute() {
+function ProtectedRoute({ isCheckingSession = false }) {
   const { auth } = useSessionContext();
 
+  if (isCheckingSession) {
+    return <LoadingState title="Verificando sesión" message="Validando la sesión activa..." />;
+  }
+
   if (!auth.isAuthenticated) {
-    return <Navigate to="/signup" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
 }
 
-function PublicOnlyRoute() {
+function PublicOnlyRoute({ isCheckingSession = false }) {
   const { auth } = useSessionContext();
+
+  if (isCheckingSession) {
+    return <LoadingState title="Verificando sesión" message="Validando la sesión activa..." />;
+  }
 
   if (auth.isAuthenticated) {
     return <Navigate to="/board" replace />;
@@ -152,7 +166,7 @@ function PublicOnlyRoute() {
   return <Outlet />;
 }
 
-function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorkspaceLoading = false }) {
+function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorkspaceLoading = false, onPostComment }) {
   const { idTicket } = useParams();
   const [remoteTicket, setRemoteTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -167,7 +181,7 @@ function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorksp
     let isMounted = true;
 
     async function loadTicketDetail() {
-      if (!idTicket || idTicket === "pending" || localTicket) {
+      if (!idTicket || idTicket === "pending") {
         setRemoteTicket(null);
         return;
       }
@@ -176,7 +190,7 @@ function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorksp
         setIsLoading(true);
         const ticket = await getTicket(idTicket);
         if (isMounted) setRemoteTicket(ticket);
-      } catch (_error) {
+      } catch {
         if (isMounted) setRemoteTicket(null);
       } finally {
         if (isMounted) setIsLoading(false);
@@ -192,7 +206,7 @@ function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorksp
 
   const issue = useMemo(() => {
     if (isLoading) return buildEmptyIssueDetail(currentUser);
-    return toIssueDetail(localTicket ?? remoteTicket, currentUser);
+    return toIssueDetail(remoteTicket ?? localTicket, currentUser);
   }, [currentUser, isLoading, localTicket, remoteTicket]);
 
   return (
@@ -201,6 +215,7 @@ function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorksp
       currentUser={currentUser}
       activities={activities}
       isLoading={isLoading || isWorkspaceLoading}
+      onPostComment={(comment) => onPostComment?.(issue, comment)}
     />
   );
 }
@@ -214,6 +229,7 @@ function AppRoutes() {
     setAuthSession,
     setActiveProject,
     setActiveTicket,
+    updateCurrentUser,
     logout,
   } = useSessionContext();
   const { showError, showSuccess, showWarning } = useNotificationContext();
@@ -225,9 +241,52 @@ function AppRoutes() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingProject, setIsSavingProject] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function validateStoredSession() {
+      try {
+        const sessionResult = await refreshSessionRequest().catch(() => meRequest());
+        let normalizedSession = normalizeAuthResponse(sessionResult.data);
+
+        if (normalizedSession.accessToken) {
+          persistAccessToken(normalizedSession.accessToken);
+        }
+
+        if (!normalizedSession.user) {
+          const meResult = await meRequest();
+          normalizedSession = normalizeAuthResponse(meResult.data, normalizedSession.user);
+        }
+
+        if (!normalizedSession.user) {
+          throw new Error("No active session user was returned.");
+        }
+
+        if (isMounted) {
+          persistAccessToken(normalizedSession.accessToken);
+          setAuthSession(normalizedSession);
+        }
+      } catch {
+        clearAccessToken();
+        logout();
+      } finally {
+        if (isMounted) setIsCheckingSession(false);
+      }
+    }
+
+    validateStoredSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [logout, setAuthSession]);
 
   const reloadWorkspace = useCallback(async () => {
-    if (!auth.isAuthenticated) return;
+    if (isCheckingSession || !auth.isAuthenticated) return;
 
     try {
       setIsSyncing(true);
@@ -277,9 +336,10 @@ function AppRoutes() {
       setHasLoadedWorkspace(true);
       setIsSyncing(false);
     }
-  }, [active.id_proyecto, auth.isAuthenticated, setActiveProject, showWarning]);
+  }, [active.id_proyecto, auth.isAuthenticated, isCheckingSession, setActiveProject, showWarning]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     reloadWorkspace();
   }, [reloadWorkspace]);
 
@@ -307,16 +367,31 @@ function AppRoutes() {
   }, [active.id_proyecto, proyectos]);
 
   const activeProjectId = getIdProyecto(activeProject) ?? active.id_proyecto ?? null;
-  const activeProjectMembers = miembrosByProyecto[activeProjectId] ?? [];
+  const activeProjectMembers = useMemo(
+    () => miembrosByProyecto[activeProjectId] ?? [],
+    [activeProjectId, miembrosByProyecto]
+  );
 
   const currentMember = useMemo(
-    () => (currentUser ? toMember(currentUser, { ticketsAsignados: [] }) : null),
+    () => (currentUser ? toMember(currentUser, { ticketsAsignados: [], cargo: "OWNER", rol: "OWNER" }) : null),
     [currentUser]
   );
 
+  const usersByProject = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(miembrosByProyecto).map(([idProyecto, miembros]) => [
+        idProyecto,
+        miembros
+          .filter((member) => member.estado_registro !== "ELIMINADO")
+          .map(toUserOption)
+          .filter((option) => option.value),
+      ])
+    );
+  }, [miembrosByProyecto]);
+
   const routeData = useMemo(() => {
-    const fallbackMembers = currentMember ? [currentMember] : [];
-    const teamMembers = activeProjectMembers.length > 0 ? activeProjectMembers : fallbackMembers;
+    const teamMembers = activeProjectMembers;
+    const teamProfiles = teamMembers.length > 0 ? teamMembers : currentMember ? [currentMember] : [];
     const projectsWithMembers = proyectos.map((proyecto) => ({
       ...proyecto,
       members: miembrosByProyecto[getIdProyecto(proyecto)] ?? [],
@@ -325,8 +400,10 @@ function AppRoutes() {
 
     return {
       users: userOptions,
+      usersByProject,
       members: teamMembers,
-      teamProfiles: teamMembers,
+      teamProfiles,
+      createProjectInitialMembers: currentMember ? [currentMember] : [],
       statuses: ticketStatusOptions,
       priorities: ticketPriorityOptions,
       ticketsByStatus:
@@ -342,17 +419,28 @@ function AppRoutes() {
       isSyncing,
       isLoading: isSyncing && !hasLoadedWorkspace,
     };
-  }, [activeProjectMembers, currentMember, currentUser, hasLoadedWorkspace, isSyncing, miembrosByProyecto, projectOptions, proyectos, tickets, userOptions]);
+  }, [activeProjectMembers, currentMember, currentUser, hasLoadedWorkspace, isSyncing, miembrosByProyecto, projectOptions, proyectos, tickets, userOptions, usersByProject]);
 
   const navigateByView = useCallback(
-    (viewKey) => {
+    (viewKey, runtimePayload = {}) => {
+      const idProyecto = runtimePayload?.id_proyecto ?? runtimePayload?.id;
+      const idTicket = runtimePayload?.id_ticket;
+
+      if (idProyecto) {
+        setActiveProject(idProyecto);
+      }
+
+      if (idTicket) {
+        setActiveTicket(idTicket);
+      }
+
       const firstTicketId = getIdTicket(tickets[0]);
-      const issuePath = firstTicketId ? `/issues/${firstTicketId}` : "/issues/pending";
+      const issuePath = idTicket ? `/issues/${idTicket}` : firstTicketId ? `/issues/${firstTicketId}` : "/issues/pending";
       const path = viewKey === "issue-detail" ? issuePath : ROUTE_BY_VIEW[viewKey] ?? viewKey;
 
       navigate(path || "/board");
     },
-    [navigate, tickets]
+    [navigate, setActiveProject, setActiveTicket, tickets]
   );
 
   const handleLogin = useCallback(
@@ -360,11 +448,24 @@ function AppRoutes() {
       try {
         setAuthLoading(true);
         const result = await loginRequest(payload);
-        const normalized = normalizeAuthResponse(result.data, {
+        let normalized = normalizeAuthResponse(result.data, {
           email: payload.email,
           nombre: payload.email,
           timezone: "America/La_Paz",
         });
+
+        if (normalized.accessToken) {
+          persistAccessToken(normalized.accessToken);
+        }
+
+        const meResult = await meRequest().catch(() => null);
+        if (meResult?.data) {
+          normalized = {
+            ...normalized,
+            ...normalizeAuthResponse(meResult.data, normalized.user),
+            accessToken: normalizeAuthResponse(meResult.data).accessToken ?? normalized.accessToken,
+          };
+        }
 
         persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
@@ -398,7 +499,21 @@ function AppRoutes() {
           password: payload.password,
         });
 
-        const normalized = normalizeAuthResponse(loginResult.data, payload);
+        let normalized = normalizeAuthResponse(loginResult.data, payload);
+
+        if (normalized.accessToken) {
+          persistAccessToken(normalized.accessToken);
+        }
+
+        const meResult = await meRequest().catch(() => null);
+        if (meResult?.data) {
+          normalized = {
+            ...normalized,
+            ...normalizeAuthResponse(meResult.data, normalized.user),
+            accessToken: normalizeAuthResponse(meResult.data).accessToken ?? normalized.accessToken,
+          };
+        }
+
         persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
 
@@ -467,6 +582,60 @@ function AppRoutes() {
     [currentUser?.id_usuario, navigate, reloadWorkspace, setActiveProject, showError, showSuccess]
   );
 
+  const handleManageProjectMembers = useCallback(
+    (project) => {
+      const idProyecto = getIdProyecto(project);
+
+      if (idProyecto) {
+        setActiveProject(idProyecto);
+      }
+
+      navigate("/projects/members");
+    },
+    [navigate, setActiveProject]
+  );
+
+  const handleEditProject = useCallback(
+    async (project, payload) => {
+      const idProyecto = getIdProyecto(project);
+
+      if (!idProyecto) {
+        showError({
+          title: "No se pudo editar el proyecto",
+          message: "El proyecto seleccionado no tiene un id_proyecto válido.",
+        });
+        return;
+      }
+
+      try {
+        setIsSavingProject(true);
+
+        await updateProyecto(idProyecto, {
+          nombre: payload.nombre,
+          descripcion: payload.descripcion,
+          estado_registro: payload.estado_registro ?? "ACTIVO",
+          user_id_modificacion: currentUser?.id_usuario ?? currentUser?.id ?? null,
+        });
+
+        await reloadWorkspace();
+
+        showSuccess({
+          title: "Proyecto actualizado",
+          message: "Los datos del proyecto fueron guardados correctamente.",
+        });
+      } catch (error) {
+        showError({
+          title: "No se pudo editar el proyecto",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de proyectos.",
+        });
+        throw error;
+      } finally {
+        setIsSavingProject(false);
+      }
+    },
+    [currentUser, reloadWorkspace, showError, showSuccess]
+  );
+
   const handleCreateTicket = useCallback(
     async (payload) => {
       try {
@@ -502,6 +671,50 @@ function AppRoutes() {
       }
     },
     [navigate, reloadWorkspace, setActiveTicket, showError, showSuccess]
+  );
+
+  const handleCreateTicketForMember = useCallback(
+    (member) => {
+      if (activeProjectId) {
+        setActiveProject(activeProjectId);
+      }
+
+      if (member?.id_usuario) {
+        // El formulario de ticket filtrará a los miembros del proyecto; el usuario puede confirmar o cambiar el asignado.
+      }
+
+      navigate("/issues/new");
+    },
+    [activeProjectId, navigate, setActiveProject]
+  );
+
+  const handlePostTicketUpdate = useCallback(
+    async (issue, comment) => {
+      const idAsignacion = issue?.id_asignacion;
+
+      if (!idAsignacion) {
+        showError({
+          title: "No se pudo registrar la actualización",
+          message: "El ticket no tiene una asignación activa. Revisa que el detalle del ticket devuelva asignaciones.",
+        });
+        return;
+      }
+
+      try {
+        await createTicketUpdate(idAsignacion, comment);
+        await reloadWorkspace();
+        showSuccess({
+          title: "Actualización registrada",
+          message: "El comentario fue guardado en la asignación del ticket.",
+        });
+      } catch (error) {
+        showError({
+          title: "No se pudo registrar la actualización",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de actualizaciones.",
+        });
+      }
+    },
+    [reloadWorkspace, showError, showSuccess]
   );
 
   const handleAddMember = useCallback(
@@ -564,10 +777,59 @@ function AppRoutes() {
     [activeProjectId, reloadWorkspace, showError, showSuccess]
   );
 
+  const handleUpdateProfile = useCallback(
+    async (payload) => {
+      const idUsuario = currentUser?.id_usuario ?? currentUser?.id;
+
+      if (!idUsuario) {
+        showError({
+          title: "No se pudo editar el perfil",
+          message: "La sesión actual no tiene un id_usuario válido. Revisa que /api/auth/me devuelva el usuario autenticado.",
+        });
+        return;
+      }
+
+      try {
+        setIsSavingProfile(true);
+        const updatedUser = await updateUsuario(idUsuario, payload);
+        updateCurrentUser(updatedUser ?? payload);
+
+        setUsuarios((currentUsers) =>
+          currentUsers.map((usuario) =>
+            Number(usuario.id_usuario ?? usuario.id) === Number(idUsuario)
+              ? { ...usuario, ...(updatedUser ?? payload) }
+              : usuario
+          )
+        );
+
+        showSuccess({
+          title: "Perfil actualizado",
+          message: "Los datos del usuario fueron guardados correctamente.",
+        });
+      } catch (error) {
+        showError({
+          title: "No se pudo editar el perfil",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de usuarios.",
+        });
+        throw error;
+      } finally {
+        setIsSavingProfile(false);
+      }
+    },
+    [currentUser?.id, currentUser?.id_usuario, showError, showSuccess, updateCurrentUser]
+  );
+
+  const handlePasswordPending = useCallback(() => {
+    showWarning({
+      title: "Endpoint pendiente",
+      message: "El cambio de contraseña necesita un endpoint específico en el backend. No reutilicé editar usuario para no tocar password_hash por accidente.",
+    });
+  }, [showWarning]);
+
   const handleLogout = useCallback(async () => {
     try {
       await logoutRequest();
-    } catch (_error) {
+    } catch {
       // Aunque falle la llamada, limpiamos la sesión local.
     }
 
@@ -579,8 +841,8 @@ function AppRoutes() {
   return (
     <AppActionProvider onNavigate={navigateByView}>
       <Routes>
-        <Route element={<PublicOnlyRoute />}>
-          <Route index element={<Navigate to="/signup" replace />} />
+        <Route element={<PublicOnlyRoute isCheckingSession={isCheckingSession} />}>
+          <Route index element={<Navigate to="/login" replace />} />
           <Route
             path="/signup"
             element={
@@ -613,7 +875,7 @@ function AppRoutes() {
           />
         </Route>
 
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute isCheckingSession={isCheckingSession} />}>
           <Route element={<AppLayout onNavigate={navigateByView} onLogout={handleLogout} isLoading={isSyncing} />}>
             <Route path="/board" element={<BoardComponent {...routeData} />} />
             <Route
@@ -623,6 +885,9 @@ function AppRoutes() {
                   currentProjects={routeData.projects}
                   recentProjects={routeData.recentProjects}
                   isLoading={routeData.isLoading}
+                  isSavingProject={isSavingProject}
+                  onManageMembers={handleManageProjectMembers}
+                  onEditProject={handleEditProject}
                 />
               }
             />
@@ -631,7 +896,7 @@ function AppRoutes() {
               element={
                 <CreateProjectPage
                   users={routeData.users}
-                  initialMembers={routeData.members}
+                  initialMembers={routeData.createProjectInitialMembers}
                   onSubmit={handleCreateProject}
                   onCancel={() => navigate("/projects")}
                   isLoading={routeData.isLoading}
@@ -647,11 +912,13 @@ function AppRoutes() {
                     activeProject?.descripcion ??
                     "Selecciona un proyecto para revisar y administrar sus miembros."
                   }
+                  project={activeProject}
                   members={routeData.members}
                   users={routeData.users}
                   onAddMember={handleAddMember}
                   onUpdateMember={handleUpdateMember}
                   onUnlinkMember={handleUnlinkMember}
+                  onAddRequest={handleCreateTicketForMember}
                   isLoading={routeData.isLoading}
                 />
               }
@@ -662,6 +929,7 @@ function AppRoutes() {
                 <CreateIssuePage
                   projects={routeData.projectOptions}
                   users={routeData.users}
+                  usersByProject={routeData.usersByProject}
                   priorities={routeData.priorities}
                   statuses={routeData.statuses}
                   onSubmit={handleCreateTicket}
@@ -678,13 +946,26 @@ function AppRoutes() {
                   currentUser={currentUser}
                   activities={routeData.activities}
                   isWorkspaceLoading={routeData.isLoading}
+                  onPostComment={handlePostTicketUpdate}
                 />
               }
             />
-            <Route path="/profile" element={<UserProfilePage {...routeData.profileData} isLoading={routeData.isLoading} />} />
+            <Route
+              path="/profile"
+              element={
+                <UserProfilePage
+                  {...routeData.profileData}
+                  timezones={timezones}
+                  isLoading={routeData.isLoading}
+                  isSavingProfile={isSavingProfile}
+                  onSubmitProfile={handleUpdateProfile}
+                  onShowPasswordPending={handlePasswordPending}
+                />
+              }
+            />
             <Route
               path="*"
-              element={<Navigate to={auth.isAuthenticated ? "/board" : "/signup"} replace />}
+              element={<Navigate to={auth.isAuthenticated ? "/board" : "/login"} replace />}
             />
           </Route>
         </Route>

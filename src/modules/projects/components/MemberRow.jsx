@@ -20,8 +20,9 @@ export default function MemberRow({ member }) {
     memberDraft,
     updateMemberDraftField,
     estadoRegistroOptions,
+    projectRoleOptions,
   } = useProjectMembersContext();
-  const { nombre, rol, posicion_principal, urlProfile, email, estado_registro } = member;
+  const { nombre, cargo, rol, posicion_principal, urlProfile, email, estado_registro } = member;
   const assignedTickets = getAssignedTickets(member);
   const isEditing = Number(editingMemberId) === Number(member.id_usuario ?? member.id);
 
@@ -33,49 +34,42 @@ export default function MemberRow({ member }) {
             <div className="d-flex align-items-center gap-2 mb-3">
               <MemberAvatar nombre={nombre} urlProfile={urlProfile} />
               <div>
-                <div className="fw-semibold">Modificar miembro</div>
-                <small className="text-secondary">Actualiza la información visible del miembro y guarda los cambios.</small>
+                <div className="fw-semibold">Modificar asignación</div>
+                <small className="text-secondary">Actualiza el rol del miembro dentro de este proyecto.</small>
               </div>
             </div>
 
             <div className="row g-2 align-items-end">
-              <div className="col-12 col-md-3">
+              <div className="col-12 col-md-4">
                 <input
                   type="text"
                   className="form-control form-control-sm"
-                  placeholder="Nombre"
                   aria-label="Nombre"
                   value={memberDraft.nombre ?? ""}
-                  onChange={(event) => updateMemberDraftField("nombre", event.target.value)}
+                  disabled
+                  readOnly
                 />
               </div>
 
-              <div className="col-12 col-md-3">
-                <input
-                  type="email"
-                  className="form-control form-control-sm"
-                  placeholder="Email"
-                  aria-label="Email"
-                  value={memberDraft.email ?? ""}
-                  onChange={(event) => updateMemberDraftField("email", event.target.value)}
-                />
-              </div>
-
-              <div className="col-12 col-md-3">
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  placeholder="Posición principal"
-                  aria-label="Posición principal"
-                  value={memberDraft.posicion_principal ?? ""}
-                  onChange={(event) => updateMemberDraftField("posicion_principal", event.target.value)}
-                />
-              </div>
-
-              <div className="col-12 col-md-3">
+              <div className="col-12 col-md-4">
                 <select
                   className="form-select form-select-sm"
-                  aria-label="Estado del miembro"
+                  aria-label="Rol en el proyecto"
+                  value={memberDraft.cargo ?? "MIEMBRO"}
+                  onChange={(event) => updateMemberDraftField("cargo", event.target.value)}
+                >
+                  {projectRoleOptions.map((roleOption) => (
+                    <option key={roleOption.value} value={roleOption.value}>
+                      {roleOption.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-12 col-md-4">
+                <select
+                  className="form-select form-select-sm"
+                  aria-label="Estado de la asignación"
                   value={memberDraft.estado_registro ?? "ACTIVO"}
                   onChange={(event) => updateMemberDraftField("estado_registro", event.target.value)}
                 >
@@ -117,7 +111,7 @@ export default function MemberRow({ member }) {
       </td>
 
       <td>
-        <RoleBadge rol={posicion_principal ?? rol} />
+        <RoleBadge rol={cargo ?? rol ?? posicion_principal} />
       </td>
 
       <td>

@@ -20,7 +20,7 @@ export default function MembersCard() {
     <section className="card border-0 shadow-sm">
       <div className="card-header bg-white d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
         <div>
-          <h2 className="h6 fw-bold mb-0">Team Members ({members.length})</h2>
+          <h2 className="h6 fw-bold mb-0">Miembros del proyecto ({members.length})</h2>
           <small className="text-secondary">
             {filteredMembers.length} resultado{filteredMembers.length === 1 ? "" : "s"} visible{filteredMembers.length === 1 ? "" : "s"}
           </small>

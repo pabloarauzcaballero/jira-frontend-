@@ -10,18 +10,20 @@ export function CreateIssueProvider({
   children,
   projects = [],
   users = [],
+  usersByProject = {},
   priorities = [],
   statuses = [],
   reporterId,
   onSubmit,
   onCancel,
 }) {
-  const { currentUser } = useSessionContext();
+  const { currentUser, active } = useSessionContext();
   const effectiveReporterId = reporterId ?? currentUser?.id_usuario ?? 1;
+  const initialProjectId = active?.id_proyecto ? String(active.id_proyecto) : projects[0]?.value || "";
 
   const [formData, setFormData] = useState({
-    id_proyecto: projects[0]?.value || "",
-    id_usuario: users[0]?.value || "",
+    id_proyecto: initialProjectId,
+    id_usuario: "",
     nombre: "",
     descripcion: "",
     status: statuses[0]?.value || "PENDIENTE",
@@ -30,20 +32,53 @@ export function CreateIssueProvider({
     criterios_aceptacion: [],
   });
 
-  useEffect(() => {
-    setFormData((currentData) => ({
-      ...currentData,
-      id_proyecto: currentData.id_proyecto || projects[0]?.value || "",
-      id_usuario: currentData.id_usuario || users[0]?.value || "",
-    }));
-  }, [projects, users]);
+  const selectedProjectUsers = useMemo(() => {
+    const projectUsers = usersByProject[String(formData.id_proyecto)] ?? usersByProject[Number(formData.id_proyecto)];
 
-  const handleChange = useCallback((field, value) => {
-    setFormData((currentData) => ({
-      ...currentData,
-      [field]: value,
-    }));
-  }, []);
+    if (Array.isArray(projectUsers) && projectUsers.length > 0) {
+      return projectUsers;
+    }
+
+    return [];
+  }, [formData.id_proyecto, usersByProject]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData((currentData) => {
+      const nextProjectId = currentData.id_proyecto || initialProjectId || projects[0]?.value || "";
+      const projectUsers = usersByProject[String(nextProjectId)] ?? usersByProject[Number(nextProjectId)] ?? [];
+      const hasSelectedUser = projectUsers.some(
+        (userOption) => String(userOption.value) === String(currentData.id_usuario)
+      );
+
+      return {
+        ...currentData,
+        id_proyecto: nextProjectId,
+        id_usuario: hasSelectedUser ? currentData.id_usuario : projectUsers[0]?.value || "",
+      };
+    });
+  }, [initialProjectId, projects, usersByProject]);
+
+  const handleChange = useCallback(
+    (field, value) => {
+      if (field === "id_proyecto") {
+        const projectUsers = usersByProject[String(value)] ?? usersByProject[Number(value)] ?? [];
+
+        setFormData((currentData) => ({
+          ...currentData,
+          id_proyecto: value,
+          id_usuario: projectUsers[0]?.value || "",
+        }));
+        return;
+      }
+
+      setFormData((currentData) => ({
+        ...currentData,
+        [field]: value,
+      }));
+    },
+    [usersByProject]
+  );
 
   const buildPayload = useCallback(
     () => buildTicketCreatePayload(formData, effectiveReporterId),
@@ -67,6 +102,7 @@ export function CreateIssueProvider({
           method: "POST",
           className: "btn create-issue-submit-btn",
           buildPayload,
+          disabled: !formData.id_proyecto || !formData.id_usuario,
           onExecute: (payload) => {
             onSubmit?.(payload);
           },
@@ -76,7 +112,7 @@ export function CreateIssueProvider({
         },
       ],
     }),
-    [buildPayload, onCancel, onSubmit]
+    [buildPayload, formData.id_proyecto, formData.id_usuario, onCancel, onSubmit]
   );
 
   const value = useMemo(
@@ -84,6 +120,7 @@ export function CreateIssueProvider({
       formData,
       projects,
       users,
+      selectedProjectUsers,
       priorities,
       statuses,
       reporterId: effectiveReporterId,
@@ -95,6 +132,7 @@ export function CreateIssueProvider({
       formData,
       projects,
       users,
+      selectedProjectUsers,
       priorities,
       statuses,
       effectiveReporterId,

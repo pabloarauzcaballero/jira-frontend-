@@ -46,19 +46,26 @@ export function CreateProjectProvider({
   }, []);
 
   const handleAddMember = useCallback(
-    (idUsuario) => {
+    (payload) => {
+      const idUsuario = typeof payload === "object" ? payload.id_usuario : payload;
       const usuario = buildMemberFromOption(idUsuario, users);
 
       if (!usuario) return;
 
+      const memberWithRole = {
+        ...usuario,
+        cargo: payload?.cargo ?? usuario.cargo ?? "MIEMBRO",
+        rol: payload?.cargo ?? usuario.rol ?? "MIEMBRO",
+      };
+
       setMembers((currentMembers) => {
         const alreadyAdded = currentMembers.some(
-          (member) => Number(member.id_usuario ?? member.id) === Number(usuario.id_usuario)
+          (member) => Number(member.id_usuario ?? member.id) === Number(memberWithRole.id_usuario)
         );
 
         if (alreadyAdded) return currentMembers;
 
-        return [...currentMembers, usuario];
+        return [...currentMembers, memberWithRole];
       });
     },
     [users]

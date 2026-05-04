@@ -1,8 +1,9 @@
-import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { useAppActionContext } from "../../../shared/context/AppActionContext";
 import { useProjectsContext } from "../context/ProjectsContext";
 
 export default function ProjectsHeader() {
-  const { currentProjects, recentProjects, actions } = useProjectsContext();
+  const { currentProjects, recentProjects } = useProjectsContext();
+  const { executeAction } = useAppActionContext();
   const totalProjects = currentProjects.length + recentProjects.length;
 
   return (
@@ -18,9 +19,16 @@ export default function ProjectsHeader() {
       <div className="d-flex flex-column align-items-start gap-3">
         <div className="d-flex flex-row w-100 justify-content-between">
           <h1 className="h4 fw-bold mb-1">Proyectos</h1>
-          <div className="d-flex flex-row align-items-center gap-2">
-            <ButtonActionGroup actions={actions.header} />
-          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary px-3 d-flex align-items-center gap-1"
+            onClick={() => executeAction({ id: "projects.create.navigate", type: "navigate", to: "create-project" })}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+              add
+            </span>
+            Nuevo proyecto
+          </button>
         </div>
 
         <p className="projects-header-description mb-0">

@@ -1,7 +1,7 @@
 import ProjectAvatarStack from "./ProjectAvatarStack";
 import ProjectStatusBadge from "./ProjectStatusBadge";
 
-export default function ProjectCard({ project, muted = false }) {
+export default function ProjectCard({ project, muted = false, onManageMembers, onEditProject }) {
   return (
     <article className={`project-card ${muted ? "project-card-muted" : ""}`}>
       <div className="d-flex justify-content-between align-items-start mb-2">
@@ -30,6 +30,30 @@ export default function ProjectCard({ project, muted = false }) {
           <span className="material-symbols-outlined">update</span>
           {project.updatedAt}
         </div>
+      </div>
+
+      <div className="project-card-actions">
+        <button
+          type="button"
+          className="btn btn-sm btn-light border d-flex align-items-center gap-1"
+          onClick={() => onManageMembers?.(project)}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+            groups
+          </span>
+          Miembros
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+          onClick={() => onEditProject?.(project)}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+            edit
+          </span>
+          Editar
+        </button>
       </div>
     </article>
   );

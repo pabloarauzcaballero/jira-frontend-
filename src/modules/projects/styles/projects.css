@@ -228,3 +228,37 @@
     grid-template-columns: 1fr;
   }
 }
+.project-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.project-edit-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.project-edit-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(2px);
+}
+
+.project-edit-modal-card {
+  position: relative;
+  width: min(560px, 100%);
+  background: #fff;
+  border: 1px solid var(--app-border, #e5e7eb);
+  border-radius: 1rem;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18);
+  padding: 1.25rem;
+}

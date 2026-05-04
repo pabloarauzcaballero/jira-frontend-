@@ -58,14 +58,16 @@ export function toProjectOption(proyecto = {}) {
 export function toMember(usuario = {}, extra = {}) {
   const idUsuario = usuario.id_usuario ?? usuario.id;
   const nombre = usuario.nombre ?? usuario.name ?? usuario.email ?? "Usuario";
-  const posicion = usuario.posicion_principal ?? usuario.position ?? usuario.rol ?? "Sin posición asignada";
+  const posicion = usuario.posicion_principal ?? usuario.position ?? "Sin posición asignada";
+  const cargo = usuario.cargo ?? usuario.rol ?? extra.cargo ?? extra.rol ?? "MIEMBRO";
 
   return {
     id: idUsuario,
     id_usuario: idUsuario,
     nombre,
     email: usuario.email ?? "",
-    rol: posicion,
+    cargo,
+    rol: cargo,
     posicion_principal: posicion,
     estado_registro: usuario.estado_registro ?? "ACTIVO",
     timezone: usuario.timezone,
@@ -85,6 +87,10 @@ export function toProjectCard(proyecto = {}, members = []) {
   return {
     id: idProyecto,
     id_proyecto: idProyecto,
+    nombre: proyecto.nombre ?? proyecto.name ?? `Proyecto #${idProyecto ?? "N/D"}`,
+    descripcion: proyecto.descripcion ?? proyecto.description ?? "Sin descripción del proyecto.",
+    estado_registro: estado,
+    raw: proyecto,
     name: proyecto.nombre ?? proyecto.name ?? `Proyecto #${idProyecto ?? "N/D"}`,
     key: proyecto.key ?? `PROY-${idProyecto ?? "N/D"}`,
     initials: proyecto.initials ?? `P${idProyecto ?? ""}`,
@@ -141,20 +147,37 @@ export function buildEmptyTicketsByStatus(statuses = ticketStatusOptions) {
 
 export function buildProfileDataFromUser(usuario = null) {
   const currentUser = usuario ?? {};
-  const nombre = currentUser.nombre ?? currentUser.name ?? "Usuario";
+  const idUsuario = currentUser.id_usuario ?? currentUser.id ?? null;
+  const nombre = currentUser.nombre ?? currentUser.name ?? currentUser.email ?? "Usuario";
   const posicion = currentUser.posicion_principal ?? currentUser.position ?? "Sin posición asignada";
+  const twoFactorEnabled = Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false);
 
   return {
+    rawUser: {
+      id_usuario: idUsuario,
+      nombre,
+      email: currentUser.email ?? "",
+      telefono: currentUser.telefono ?? currentUser.phone ?? "",
+      timezone: currentUser.timezone ?? "America/La_Paz",
+      posicion_principal: posicion,
+      is_two_factors: twoFactorEnabled,
+      avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
+      tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
+    },
     user: {
+      id_usuario: idUsuario,
       name: nombre,
+      nombre,
+      email: currentUser.email ?? "",
       position: posicion,
+      posicion_principal: posicion,
       avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
       initials: initialsFromName(nombre),
       tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
     },
     security: {
-      twoFactorEnabled: Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false),
-      twoFactorLabel: currentUser.is_two_factors
+      twoFactorEnabled,
+      twoFactorLabel: twoFactorEnabled
         ? "Activo según la sesión actual"
         : "Pendiente de activar",
       actions: ["Cambiar contraseña", "Revisar estado de cuenta"],
@@ -224,13 +247,16 @@ export function buildTicketCreatePayload(formData, reporterId = null) {
 }
 
 export function unwrapProyectoMiembro(row = {}) {
-  const usuario = row.usuario ?? row.user ?? row;
+  const usuario = row.usuario ?? row.user ?? row.usuarios ?? row.Usuario ?? row;
+  const cargo = row.cargo ?? row.rol ?? usuario.cargo ?? usuario.rol ?? "MIEMBRO";
 
   return toMember(usuario, {
-    id: usuario.id_usuario ?? row.id_usuario,
-    id_usuario: usuario.id_usuario ?? row.id_usuario,
-    cargo: row.cargo ?? usuario.cargo ?? "MIEMBRO",
-    rol: row.cargo ?? usuario.posicion_principal ?? "MIEMBRO",
+    id: usuario.id_usuario ?? row.id_usuario ?? row.user_id ?? row.id,
+    id_usuario: usuario.id_usuario ?? row.id_usuario ?? row.user_id ?? row.id,
+    id_asignacion: row.id_asignacion ?? row.id_proyecto_asignacion ?? row.id,
+    id_proyecto: row.id_proyecto,
+    cargo,
+    rol: cargo,
     estado_registro: row.estado_registro ?? usuario.estado_registro ?? "ACTIVO",
   });
 }
@@ -242,15 +268,19 @@ export function toIssueDetail(ticket = {}, currentUser = null) {
   const title = ticket.nombre ?? ticket.title ?? "Ticket sin título";
   const statusValue = ticket.status ?? "PENDIENTE";
   const priorityValue = ticket.prioridad ?? "MEDIA";
-  const firstAssignment = Array.isArray(ticket.asignaciones) ? ticket.asignaciones[0] : null;
-  const assignee = firstAssignment?.usuario ?? currentUser;
+  const assignments = ticket.asignaciones ?? ticket.asignaciones_ticket ?? ticket.assignments ?? [];
+  const firstAssignment = Array.isArray(assignments) ? assignments[0] : null;
+  const assignee = firstAssignment?.usuario ?? firstAssignment?.user ?? ticket.usuario ?? ticket.assignee ?? currentUser;
   const assigneeName = assignee?.nombre ?? assignee?.email ?? "Sin asignar";
 
   return {
+    id_ticket: idTicket,
+    id_asignacion: firstAssignment?.id_asignacion ?? firstAssignment?.id ?? ticket.id_asignacion ?? null,
+    id_proyecto: ticket.id_proyecto ?? firstAssignment?.id_proyecto ?? ticket.proyecto?.id_proyecto ?? null,
     key: `TCK-${idTicket ?? "N/D"}`,
     workspace: "Workspace principal",
-    projectName: ticket.proyecto?.nombre ?? `Proyecto #${firstAssignment?.id_proyecto ?? "N/D"}`,
-    projectShortName: `PROY-${firstAssignment?.id_proyecto ?? "N/D"}`,
+    projectName: ticket.proyecto?.nombre ?? `Proyecto #${ticket.id_proyecto ?? firstAssignment?.id_proyecto ?? "N/D"}`,
+    projectShortName: `PROY-${ticket.id_proyecto ?? firstAssignment?.id_proyecto ?? "N/D"}`,
     title,
     type: "Ticket",
     status: formatDbLabel(statusValue),

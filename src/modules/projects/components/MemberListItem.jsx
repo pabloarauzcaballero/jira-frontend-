@@ -12,7 +12,7 @@ export default function MemberListItem({ member, onRemoveMember }) {
       </div>
 
       <div>
-        <RoleBadge rol={member.posicion_principal ?? member.rol} />
+        <RoleBadge rol={member.cargo ?? member.rol ?? member.posicion_principal} />
       </div>
 
       <button

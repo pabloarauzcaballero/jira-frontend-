@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { projectRoleOptions } from "../../../shared/data/databaseOptions";
 
 export default function AddMemberForm({
   users = [],
@@ -12,7 +13,8 @@ export default function AddMemberForm({
 }) {
   const firstUserValue = useMemo(() => users[0]?.value || "", [users]);
   const [localIdUsuario, setLocalIdUsuario] = useState(firstUserValue);
-  const idUsuario = selectedUserId ?? localIdUsuario;
+  const [cargo, setCargo] = useState("MIEMBRO");
+  const idUsuario = selectedUserId ?? (localIdUsuario || firstUserValue);
 
   function updateSelectedUserId(nextValue) {
     if (typeof onSelectedUserIdChange === "function") {
@@ -26,9 +28,12 @@ export default function AddMemberForm({
   function handleAddMember() {
     if (!idUsuario) return;
 
-    onAddMember?.(Number(idUsuario));
+    onAddMember?.({ id_usuario: Number(idUsuario), cargo });
     updateSelectedUserId(firstUserValue);
+    setCargo("MIEMBRO");
   }
+
+  const contextPayload = { id_usuario: idUsuario, cargo };
 
   return (
     <div className="create-project-add-member project-members-add-member-form">
@@ -39,6 +44,7 @@ export default function AddMemberForm({
 
         <select
           className="form-select create-project-input create-project-input-with-icon"
+          aria-label="Usuario para añadir al proyecto"
           value={idUsuario}
           onChange={(event) => updateSelectedUserId(event.target.value)}
           disabled={users.length === 0}
@@ -55,10 +61,24 @@ export default function AddMemberForm({
         </select>
       </div>
 
+      <select
+        className="form-select create-project-role-select"
+        aria-label="Rol en el proyecto"
+        value={cargo}
+        onChange={(event) => setCargo(event.target.value)}
+        disabled={users.length === 0}
+      >
+        {projectRoleOptions.map((roleOption) => (
+          <option key={roleOption.value} value={roleOption.value}>
+            {roleOption.label}
+          </option>
+        ))}
+      </select>
+
       {actions.length > 0 ? (
         <ButtonActionGroup
           actions={actions}
-          contextPayload={{ id_usuario: idUsuario }}
+          contextPayload={contextPayload}
           className="d-flex gap-2"
           defaultButtonClassName="btn create-project-add-btn"
         />

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import { API_ENDPOINTS } from "../../../shared/services/apiEndpoints";
 import { toMember } from "../../../shared/data/databaseAdapters";
-import { estadoRegistroOptions } from "../../../shared/data/databaseOptions";
+import { estadoRegistroOptions, projectRoleOptions } from "../../../shared/data/databaseOptions";
 
 const ProjectMembersContext = createContext(null);
 
@@ -14,6 +14,7 @@ function getMemberSearchText(member = {}) {
   return [
     member.nombre,
     member.email,
+    member.cargo,
     member.rol,
     member.posicion_principal,
     member.estado_registro,
@@ -29,15 +30,19 @@ function buildMemberFromUserOption(idUsuario, userOptions = []) {
 
   if (!option) return null;
 
-  return toMember(option.raw ?? {
-    id_usuario: Number(option.value),
-    nombre: option.label,
-    posicion_principal: "Pendiente",
-  });
+  return toMember(
+    option.raw ?? {
+      id_usuario: Number(option.value),
+      nombre: option.label,
+      posicion_principal: "Pendiente",
+    },
+    { cargo: "MIEMBRO", rol: "MIEMBRO" }
+  );
 }
 
 export function ProjectMembersProvider({
   children,
+  project,
   projectName,
   projectDescription,
   members: initialMembers = [],
@@ -48,6 +53,7 @@ export function ProjectMembersProvider({
   onAddMember,
   onUpdateMember,
   onFindMember,
+  onEditProject,
 }) {
   const [members, setMembers] = useState(initialMembers);
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,6 +63,7 @@ export function ProjectMembersProvider({
   const [memberDraft, setMemberDraft] = useState({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMembers(initialMembers);
   }, [initialMembers]);
 
@@ -66,8 +73,15 @@ export function ProjectMembersProvider({
     const currentMemberIds = new Set(members.map((member) => Number(member.id_usuario ?? member.id)));
     const filteredOptions = userOptions.filter((userOption) => !currentMemberIds.has(Number(userOption.value)));
 
-    return filteredOptions.length > 0 ? filteredOptions : userOptions;
+    return filteredOptions;
   }, [members, userOptions]);
+
+  useEffect(() => {
+    if (!selectedUserId || !availableUserOptions.some((option) => String(option.value) === String(selectedUserId))) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedUserId(availableUserOptions[0]?.value ?? "");
+    }
+  }, [availableUserOptions, selectedUserId]);
 
   const filteredMembers = useMemo(() => {
     const query = normalizeText(searchTerm);
@@ -99,6 +113,12 @@ export function ProjectMembersProvider({
 
       if (!newMember) return null;
 
+      const memberWithRole = {
+        ...newMember,
+        cargo: payload.cargo ?? newMember.cargo ?? "MIEMBRO",
+        rol: payload.cargo ?? newMember.rol ?? "MIEMBRO",
+      };
+
       setMembers((currentMembers) => {
         const alreadyExists = currentMembers.some(
           (member) => Number(member.id_usuario ?? member.id) === idUsuario
@@ -106,26 +126,30 @@ export function ProjectMembersProvider({
 
         if (alreadyExists) return currentMembers;
 
-        return [...currentMembers, newMember];
+        return [...currentMembers, memberWithRole];
       });
 
       setSelectedUserId(availableUserOptions[0]?.value ?? "");
       setIsAddMemberOpen(false);
-      onAddMember?.(newMember);
+      onAddMember?.(memberWithRole);
 
-      return newMember;
+      return memberWithRole;
     },
     [availableUserOptions, onAddMember, selectedUserId, userOptions]
   );
 
   const startEditMember = useCallback((member) => {
-    setEditingMemberId(member.id_usuario ?? member.id);
+    const memberId = member.id_usuario ?? member.id;
+
+    setEditingMemberId(memberId);
     setMemberDraft({
-      id: member.id_usuario ?? member.id,
-      id_usuario: member.id_usuario ?? member.id,
+      id: memberId,
+      id_usuario: memberId,
       nombre: member.nombre ?? "",
       email: member.email ?? "",
-      posicion_principal: member.posicion_principal ?? member.rol ?? "",
+      posicion_principal: member.posicion_principal ?? "",
+      cargo: member.cargo ?? member.rol ?? "MIEMBRO",
+      rol: member.cargo ?? member.rol ?? "MIEMBRO",
       estado_registro: member.estado_registro ?? "ACTIVO",
     });
   }, []);
@@ -144,7 +168,10 @@ export function ProjectMembersProvider({
       const updatedMember = {
         ...memberDraft,
         ...payload,
+        cargo: payload.cargo ?? memberDraft.cargo ?? "MIEMBRO",
       };
+
+      updatedMember.rol = updatedMember.cargo;
 
       setMembers((currentMembers) =>
         currentMembers.map((member) => {
@@ -155,10 +182,8 @@ export function ProjectMembersProvider({
 
           return {
             ...member,
-            nombre: updatedMember.nombre,
-            email: updatedMember.email,
-            rol: updatedMember.posicion_principal,
-            posicion_principal: updatedMember.posicion_principal,
+            cargo: updatedMember.cargo,
+            rol: updatedMember.cargo,
             estado_registro: updatedMember.estado_registro,
           };
         })
@@ -176,7 +201,9 @@ export function ProjectMembersProvider({
   const unlinkMember = useCallback(
     (member) => {
       setMembers((currentMembers) =>
-        currentMembers.filter((currentMember) => currentMember.id !== member.id)
+        currentMembers.filter(
+          (currentMember) => Number(currentMember.id_usuario ?? currentMember.id) !== Number(member.id_usuario ?? member.id)
+        )
       );
       onDesvincular?.(member);
       onUnlinkMember?.(member);
@@ -186,27 +213,6 @@ export function ProjectMembersProvider({
 
   const addRequest = useCallback(
     (member) => {
-      const newTicketId = Date.now();
-      const newTicket = {
-        id: newTicketId,
-        nombre: `TCK-${String(newTicketId).slice(-4)}`,
-        descripcion: "Solicitud pendiente de guardar.",
-        status: "PENDIENTE",
-        prioridad: "MEDIA",
-        url: "#",
-      };
-
-      setMembers((currentMembers) =>
-        currentMembers.map((currentMember) => {
-          if (currentMember.id !== member.id) return currentMember;
-
-          return {
-            ...currentMember,
-            ticketsAsignados: [...(currentMember.ticketsAsignados ?? []), newTicket],
-          };
-        })
-      );
-
       onAddRequest?.(member);
     },
     [onAddRequest]
@@ -230,16 +236,14 @@ export function ProjectMembersProvider({
           id: "project.members.findMember",
           label: "Encontrar miembro",
           icon: "search",
-          endpoint: API_ENDPOINTS.usuarios.list,
+          endpoint: API_ENDPOINTS.proyectos.miembros.list,
           method: "GET",
           className: "btn btn-sm btn-light border d-flex align-items-center gap-1",
           buildPayload: (payload) => ({
             query: payload.searchTerm,
-            filters: ["nombre", "email", "posicion_principal", "estado_registro", "tags"],
+            filters: ["nombre", "email", "cargo", "estado_registro", "tags"],
           }),
           onExecute: findMember,
-          pendingMessage:
-            "La búsqueda está lista. Se ejecutará con los filtros del miembro seleccionado.",
         },
       ],
       addForm: [
@@ -252,11 +256,10 @@ export function ProjectMembersProvider({
           className: "btn btn-primary d-flex align-items-center gap-1",
           buildPayload: (payload) => ({
             id_usuario: Number(payload.id_usuario),
+            cargo: payload.cargo ?? "MIEMBRO",
             estado_registro: "ACTIVO",
           }),
           onExecute: addMember,
-          pendingMessage:
-            "Se añadirá el usuario seleccionado al proyecto actual.",
         },
       ],
       editForm: [
@@ -265,16 +268,14 @@ export function ProjectMembersProvider({
           label: "Guardar cambios",
           icon: "save",
           endpoint: API_ENDPOINTS.proyectos.miembros.update,
-          method: "PATCH",
+          method: "PUT",
           className: "btn btn-sm btn-primary d-flex align-items-center gap-1",
           buildPayload: (payload) => ({
             id_usuario: Number(payload.id_usuario),
-            cargo: payload.cargo ?? payload.rol ?? "MIEMBRO",
+            cargo: payload.cargo ?? "MIEMBRO",
             estado_registro: payload.estado_registro,
           }),
           onExecute: saveMemberChanges,
-          pendingMessage:
-            "Se guardarán los cambios visibles del miembro.",
         },
         {
           id: "project.members.cancelMemberEdit",
@@ -300,22 +301,20 @@ export function ProjectMembersProvider({
           className: "btn btn-sm btn-outline-danger d-flex align-items-center gap-1",
           confirm: {
             title: "Desvincular usuario",
-            message:
-              "Esta acción desvinculará al usuario del proyecto actual.",
+            message: "Esta acción desvinculará al usuario del proyecto actual.",
             confirmLabel: "Desvincular",
             confirmClassName: "btn btn-danger",
           },
           onExecute: (member) => unlinkMember(member),
-          successMessage: "Desvinculación preparada.",
         },
         {
           id: "project.members.addRequest",
-          label: "Nueva request",
-          endpoint: API_ENDPOINTS.proyectoAsignacion.create,
+          label: "Nuevo ticket",
+          icon: "add_task",
+          endpoint: API_ENDPOINTS.tickets.create,
           method: "POST",
           className: "btn btn-sm btn-primary d-flex align-items-center gap-1",
           onExecute: (member) => addRequest(member),
-          successMessage: "Solicitud preparada para crear una asignación/ticket.",
         },
       ],
     }),
@@ -334,6 +333,7 @@ export function ProjectMembersProvider({
 
   const value = useMemo(
     () => ({
+      project,
       projectName,
       projectDescription,
       members,
@@ -348,7 +348,9 @@ export function ProjectMembersProvider({
       memberDraft,
       updateMemberDraftField,
       estadoRegistroOptions,
+      projectRoleOptions,
       actions,
+      onEditProject,
     }),
     [
       actions,
@@ -358,6 +360,8 @@ export function ProjectMembersProvider({
       isAddMemberOpen,
       memberDraft,
       members,
+      onEditProject,
+      project,
       projectDescription,
       projectName,
       searchTerm,

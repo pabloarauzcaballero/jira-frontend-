@@ -8,6 +8,14 @@ export const TICKET_STATUS = [
   "COMPLETADO",
 ];
 
+export const PROJECT_ROLES = [
+  "OWNER",
+  "ADMIN",
+  "EDITOR",
+  "VIEWER",
+  "MIEMBRO",
+];
+
 export const DEFAULT_TIMEZONE = "America/La_Paz";
 
 export function toOption(value) {
@@ -29,3 +37,4 @@ export function formatDbLabel(value = "") {
 export const estadoRegistroOptions = ESTADO_REGISTRO.map(toOption);
 export const ticketPriorityOptions = TICKET_PRIORIDADES.map(toOption);
 export const ticketStatusOptions = TICKET_STATUS.map(toOption);
+export const projectRoleOptions = PROJECT_ROLES.map(toOption);

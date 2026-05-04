@@ -3,7 +3,55 @@ import { requestEndpoint } from "./httpClient";
 
 function extractData(result) {
   const response = result?.data ?? result;
-  return response?.data ?? response?.user ?? response?.usuario ?? response ?? null;
+
+  return (
+    response?.data ??
+    response?.rows ??
+    response?.items ??
+    response?.result ??
+    response?.user ??
+    response?.usuario ??
+    response ??
+    null
+  );
+}
+
+function extractList(result, preferredKeys = []) {
+  const data = extractData(result);
+
+  if (Array.isArray(data)) return data;
+
+  for (const key of preferredKeys) {
+    if (Array.isArray(data?.[key])) return data[key];
+  }
+
+  if (Array.isArray(data?.rows)) return data.rows;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.data)) return data.data;
+
+  return [];
+}
+
+function getProjectPayload(projectResponse) {
+  const data = extractData(projectResponse);
+
+  return data?.proyecto ?? data?.project ?? data;
+}
+
+function extractProyectoMiembrosFromDetail(projectResponse) {
+  const project = getProjectPayload(projectResponse) ?? {};
+  const candidates = [
+    project.miembros,
+    project.members,
+    project.usuarios,
+    project.users,
+    project.asignaciones,
+    project.proyecto_asignaciones,
+    project.proyectoAsignaciones,
+    project.ProyectoAsignaciones,
+  ];
+
+  return candidates.find(Array.isArray) ?? [];
 }
 
 export async function listUsuarios() {
@@ -15,7 +63,7 @@ export async function listUsuarios() {
     params: { offset: 1, limit: 50 },
   });
 
-  return extractData(result) ?? [];
+  return extractList(result, ["usuarios", "users"]);
 }
 
 export async function updateUsuario(idUsuario, payload) {
@@ -35,7 +83,7 @@ export async function listProyectos() {
     method: "GET",
   });
 
-  return extractData(result) ?? [];
+  return extractList(result, ["proyectos", "projects"]);
 }
 
 export async function getProyecto(idProyecto) {
@@ -45,7 +93,20 @@ export async function getProyecto(idProyecto) {
     method: "GET",
   });
 
-  return extractData(result);
+  return getProjectPayload(result);
+}
+
+export async function getProyectoConMiembros(idProyecto) {
+  const result = await requestEndpoint({
+    endpoint: API_ENDPOINTS.proyectos.detail,
+    endpointParams: [idProyecto],
+    method: "GET",
+  });
+
+  const project = getProjectPayload(result);
+  const miembros = extractProyectoMiembrosFromDetail(result);
+
+  return { project, miembros };
 }
 
 export async function createProyecto(payload) {
@@ -58,8 +119,29 @@ export async function createProyecto(payload) {
   return extractData(result);
 }
 
+export async function updateProyecto(idProyecto, payload) {
+  const result = await requestEndpoint({
+    endpoint: API_ENDPOINTS.proyectos.update,
+    endpointParams: [idProyecto],
+    method: "PUT",
+    data: payload,
+  });
+
+  return extractData(result);
+}
+
 export async function listProyectoMiembros(idProyecto) {
   if (!idProyecto) return [];
+
+  try {
+    const detail = await getProyectoConMiembros(idProyecto);
+
+    if (detail.miembros.length > 0) {
+      return detail.miembros;
+    }
+  } catch {
+    // Si el detalle no trae miembros o falla, probamos el endpoint dedicado.
+  }
 
   const result = await requestEndpoint({
     endpoint: API_ENDPOINTS.proyectos.miembros.list,
@@ -67,7 +149,7 @@ export async function listProyectoMiembros(idProyecto) {
     method: "GET",
   });
 
-  return extractData(result) ?? [];
+  return extractList(result, ["miembros", "members", "usuarios", "users"]);
 }
 
 export async function addProyectoMiembro(idProyecto, payload) {
@@ -111,7 +193,7 @@ export async function listTicketsByProyecto(idProyecto) {
     method: "GET",
   });
 
-  return extractData(result) ?? [];
+  return extractList(result, ["tickets"]);
 }
 
 export async function getTicket(idTicket) {
