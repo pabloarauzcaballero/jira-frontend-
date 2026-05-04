@@ -1,12 +1,6 @@
-import { useAppActionContext } from "../../../shared/context/AppActionContext";
-import { useProfileContext } from "../context/ProfileContext";
 import ProfileTag from "./ProfileTag";
 
 export default function ProfileSummaryCard({ user = {} }) {
-  const { executeAction } = useAppActionContext();
-  const { actions, profileData } = useProfileContext();
-  const editAction = actions.header?.[0];
-
   return (
     <article className="profile-card profile-summary-card">
       <div className="profile-avatar-wrapper">
@@ -25,10 +19,9 @@ export default function ProfileSummaryCard({ user = {} }) {
         <button
           type="button"
           className="profile-avatar-overlay"
-          aria-label="Editar perfil"
-          onClick={() => executeAction(editAction, profileData.rawUser)}
+          aria-label="Change profile photo"
         >
-          <span className="material-symbols-outlined">edit</span>
+          <span className="material-symbols-outlined">photo_camera</span>
         </button>
       </div>
 

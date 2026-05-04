@@ -1,13 +1,10 @@
 import { createContext, useContext, useMemo } from "react";
 
+import { API_ENDPOINTS } from "../../../shared/services/apiEndpoints";
+
 const ProfileContext = createContext(null);
 
-export function ProfileProvider({
-  children,
-  profileData = {},
-  onEditProfile,
-  onChangePassword,
-}) {
+export function ProfileProvider({ children, profileData = {} }) {
   const actions = useMemo(
     () => ({
       header: [
@@ -15,30 +12,24 @@ export function ProfileProvider({
           id: "profile.edit",
           label: "Editar perfil",
           icon: "edit",
+          endpoint: API_ENDPOINTS.usuarios.update,
+          method: "PATCH",
           className: "btn btn-sm btn-primary d-flex align-items-center gap-1",
-          onExecute: () => onEditProfile?.(),
-        },
-      ],
-      details: [
-        {
-          id: "profile.details.edit",
-          label: "Editar",
-          icon: "edit",
-          className: "btn btn-sm btn-light border d-flex align-items-center gap-1",
-          onExecute: () => onEditProfile?.(),
+          successMessage: "Edición de perfil preparada.",
         },
       ],
       security: [
         {
           id: "profile.security.password",
           label: "Cambiar contraseña",
-          icon: "lock_reset",
-          className: "btn btn-sm btn-light border d-flex align-items-center justify-content-center gap-1",
-          onExecute: () => onChangePassword?.(),
+          endpoint: API_ENDPOINTS.usuarios.update,
+          method: "PATCH",
+          className: "btn btn-sm btn-light border",
+          successMessage: "Cambio de contraseña preparado.",
         },
       ],
     }),
-    [onChangePassword, onEditProfile]
+    []
   );
 
   const value = useMemo(() => ({ profileData, actions }), [profileData, actions]);

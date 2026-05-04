@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import "../styles/profile.css";
 
 import ProfileHeader from "../components/ProfileHeader";
@@ -7,7 +5,6 @@ import ProfileSummaryCard from "../components/ProfileSummaryCard";
 import SecurityCard from "../components/SecurityCard";
 import AccountDetailsCard from "../components/AccountDetailsCard";
 import RecentActivityCard from "../components/RecentActivityCard";
-import ProfileEditModal from "../components/ProfileEditModal";
 import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
 import LoadingState from "../../../shared/components/loading/LoadingState";
 
@@ -39,36 +36,13 @@ function ProfileContent() {
 }
 
 export default function UserProfilePage(props) {
-  const [isEditOpen, setIsEditOpen] = useState(false);
-
   if (props.isLoading) {
     return <LoadingState title="Cargando perfil" message="Sincronizando los datos del usuario activo..." />;
   }
 
-  async function handleSubmitProfile(payload) {
-    await props.onSubmitProfile?.(payload);
-    setIsEditOpen(false);
-  }
-
-  function handleChangePassword() {
-    props.onShowPasswordPending?.();
-  }
-
   return (
-    <ProfileProvider
-      profileData={props}
-      onEditProfile={() => setIsEditOpen(true)}
-      onChangePassword={handleChangePassword}
-    >
+    <ProfileProvider profileData={props}>
       <ProfileContent />
-      <ProfileEditModal
-        isOpen={isEditOpen}
-        user={props.rawUser}
-        timezones={props.timezones}
-        isSaving={props.isSavingProfile}
-        onClose={() => setIsEditOpen(false)}
-        onSubmit={handleSubmitProfile}
-      />
     </ProfileProvider>
   );
 }

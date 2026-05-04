@@ -42,10 +42,8 @@ import {
   clearAccessToken,
   loginRequest,
   logoutRequest,
-  meRequest,
   normalizeAuthResponse,
   persistAccessToken,
-  refreshSessionRequest,
   signupRequest,
 } from "./shared/services/authService";
 import {
@@ -59,7 +57,6 @@ import {
   listUsuarios,
   removeProyectoMiembro,
   updateProyectoMiembro,
-  updateUsuario,
 } from "./shared/services/jiraApiService";
 
 const APP_NAME = "Mini Issue Tracker";
@@ -99,8 +96,7 @@ function getActiveView(pathname = "") {
   if (pathname.startsWith("/profile")) return "profile";
   if (pathname.startsWith("/board")) return "board";
   if (pathname.startsWith("/login")) return "login";
-  if (pathname.startsWith("/signup")) return "signup";
-  return "login";
+  return "signup";
 }
 
 function getIdProyecto(proyecto = {}) {
@@ -111,14 +107,14 @@ function getIdTicket(ticket = {}) {
   return ticket.id_ticket ?? ticket.id;
 }
 
-function AppLayout({ onNavigate, onLogout, isLoading = false }) {
+function AppLayout({ onNavigate, isLoading = false }) {
   const location = useLocation();
   const activeView = getActiveView(location.pathname);
 
   return (
     <>
       <NavBar />
-      <HamburguerNav activeView={activeView} onNavigate={onNavigate} onLogout={onLogout} />
+      <HamburguerNav activeView={activeView} onNavigate={onNavigate} />
       <main className="app-main">
         {isLoading && (
           <div className="app-loading-strip">
@@ -136,26 +132,18 @@ function AppLayout({ onNavigate, onLogout, isLoading = false }) {
   );
 }
 
-function ProtectedRoute({ isCheckingSession = false }) {
+function ProtectedRoute() {
   const { auth } = useSessionContext();
 
-  if (isCheckingSession) {
-    return <LoadingState title="Verificando sesión" message="Validando la sesión activa..." />;
-  }
-
   if (!auth.isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/signup" replace />;
   }
 
   return <Outlet />;
 }
 
-function PublicOnlyRoute({ isCheckingSession = false }) {
+function PublicOnlyRoute() {
   const { auth } = useSessionContext();
-
-  if (isCheckingSession) {
-    return <LoadingState title="Verificando sesión" message="Validando la sesión activa..." />;
-  }
 
   if (auth.isAuthenticated) {
     return <Navigate to="/board" replace />;
@@ -226,7 +214,6 @@ function AppRoutes() {
     setAuthSession,
     setActiveProject,
     setActiveTicket,
-    updateCurrentUser,
     logout,
   } = useSessionContext();
   const { showError, showSuccess, showWarning } = useNotificationContext();
@@ -238,47 +225,9 @@ function AppRoutes() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function validateStoredSession() {
-      try {
-        const sessionResult = await refreshSessionRequest().catch(() => meRequest());
-        let normalizedSession = normalizeAuthResponse(sessionResult.data);
-
-        if (!normalizedSession.user) {
-          const meResult = await meRequest();
-          normalizedSession = normalizeAuthResponse(meResult.data);
-        }
-
-        if (!normalizedSession.user) {
-          throw new Error("No active session user was returned.");
-        }
-
-        if (isMounted) {
-          persistAccessToken(normalizedSession.accessToken);
-          setAuthSession(normalizedSession);
-        }
-      } catch (_error) {
-        clearAccessToken();
-        logout();
-      } finally {
-        if (isMounted) setIsCheckingSession(false);
-      }
-    }
-
-    validateStoredSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [logout, setAuthSession]);
 
   const reloadWorkspace = useCallback(async () => {
-    if (isCheckingSession || !auth.isAuthenticated) return;
+    if (!auth.isAuthenticated) return;
 
     try {
       setIsSyncing(true);
@@ -328,7 +277,7 @@ function AppRoutes() {
       setHasLoadedWorkspace(true);
       setIsSyncing(false);
     }
-  }, [active.id_proyecto, auth.isAuthenticated, isCheckingSession, setActiveProject, showWarning]);
+  }, [active.id_proyecto, auth.isAuthenticated, setActiveProject, showWarning]);
 
   useEffect(() => {
     reloadWorkspace();
@@ -411,16 +360,11 @@ function AppRoutes() {
       try {
         setAuthLoading(true);
         const result = await loginRequest(payload);
-        let normalized = normalizeAuthResponse(result.data, {
+        const normalized = normalizeAuthResponse(result.data, {
           email: payload.email,
           nombre: payload.email,
           timezone: "America/La_Paz",
         });
-
-        const meResult = await meRequest().catch(() => null);
-        if (meResult?.data) {
-          normalized = normalizeAuthResponse(meResult.data, normalized.user);
-        }
 
         persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
@@ -454,12 +398,7 @@ function AppRoutes() {
           password: payload.password,
         });
 
-        let normalized = normalizeAuthResponse(loginResult.data, payload);
-        const meResult = await meRequest().catch(() => null);
-        if (meResult?.data) {
-          normalized = normalizeAuthResponse(meResult.data, normalized.user);
-        }
-
+        const normalized = normalizeAuthResponse(loginResult.data, payload);
         persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
 
@@ -625,55 +564,6 @@ function AppRoutes() {
     [activeProjectId, reloadWorkspace, showError, showSuccess]
   );
 
-  const handleUpdateProfile = useCallback(
-    async (payload) => {
-      const idUsuario = currentUser?.id_usuario ?? currentUser?.id;
-
-      if (!idUsuario) {
-        showError({
-          title: "No se pudo editar el perfil",
-          message: "La sesión actual no tiene un id_usuario válido. Revisa que /api/auth/me devuelva el usuario autenticado.",
-        });
-        return;
-      }
-
-      try {
-        setIsSavingProfile(true);
-        const updatedUser = await updateUsuario(idUsuario, payload);
-        updateCurrentUser(updatedUser ?? payload);
-
-        setUsuarios((currentUsers) =>
-          currentUsers.map((usuario) =>
-            Number(usuario.id_usuario ?? usuario.id) === Number(idUsuario)
-              ? { ...usuario, ...(updatedUser ?? payload) }
-              : usuario
-          )
-        );
-
-        showSuccess({
-          title: "Perfil actualizado",
-          message: "Los datos del usuario fueron guardados correctamente.",
-        });
-      } catch (error) {
-        showError({
-          title: "No se pudo editar el perfil",
-          message: error?.response?.data?.message || error.message || "Revisa el endpoint de usuarios.",
-        });
-        throw error;
-      } finally {
-        setIsSavingProfile(false);
-      }
-    },
-    [currentUser?.id, currentUser?.id_usuario, showError, showSuccess, updateCurrentUser]
-  );
-
-  const handlePasswordPending = useCallback(() => {
-    showWarning({
-      title: "Endpoint pendiente",
-      message: "El cambio de contraseña necesita un endpoint específico en el backend. No reutilicé editar usuario para no tocar password_hash por accidente.",
-    });
-  }, [showWarning]);
-
   const handleLogout = useCallback(async () => {
     try {
       await logoutRequest();
@@ -689,8 +579,8 @@ function AppRoutes() {
   return (
     <AppActionProvider onNavigate={navigateByView}>
       <Routes>
-        <Route element={<PublicOnlyRoute isCheckingSession={isCheckingSession} />}>
-          <Route index element={<Navigate to="/login" replace />} />
+        <Route element={<PublicOnlyRoute />}>
+          <Route index element={<Navigate to="/signup" replace />} />
           <Route
             path="/signup"
             element={
@@ -723,7 +613,7 @@ function AppRoutes() {
           />
         </Route>
 
-        <Route element={<ProtectedRoute isCheckingSession={isCheckingSession} />}>
+        <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout onNavigate={navigateByView} onLogout={handleLogout} isLoading={isSyncing} />}>
             <Route path="/board" element={<BoardComponent {...routeData} />} />
             <Route
@@ -791,22 +681,10 @@ function AppRoutes() {
                 />
               }
             />
-            <Route
-              path="/profile"
-              element={
-                <UserProfilePage
-                  {...routeData.profileData}
-                  timezones={timezones}
-                  isLoading={routeData.isLoading}
-                  isSavingProfile={isSavingProfile}
-                  onSubmitProfile={handleUpdateProfile}
-                  onShowPasswordPending={handlePasswordPending}
-                />
-              }
-            />
+            <Route path="/profile" element={<UserProfilePage {...routeData.profileData} isLoading={routeData.isLoading} />} />
             <Route
               path="*"
-              element={<Navigate to={auth.isAuthenticated ? "/board" : "/login"} replace />}
+              element={<Navigate to={auth.isAuthenticated ? "/board" : "/signup"} replace />}
             />
           </Route>
         </Route>

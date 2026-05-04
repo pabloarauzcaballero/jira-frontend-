@@ -141,37 +141,20 @@ export function buildEmptyTicketsByStatus(statuses = ticketStatusOptions) {
 
 export function buildProfileDataFromUser(usuario = null) {
   const currentUser = usuario ?? {};
-  const idUsuario = currentUser.id_usuario ?? currentUser.id ?? null;
-  const nombre = currentUser.nombre ?? currentUser.name ?? currentUser.email ?? "Usuario";
+  const nombre = currentUser.nombre ?? currentUser.name ?? "Usuario";
   const posicion = currentUser.posicion_principal ?? currentUser.position ?? "Sin posición asignada";
-  const twoFactorEnabled = Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false);
 
   return {
-    rawUser: {
-      id_usuario: idUsuario,
-      nombre,
-      email: currentUser.email ?? "",
-      telefono: currentUser.telefono ?? currentUser.phone ?? "",
-      timezone: currentUser.timezone ?? "America/La_Paz",
-      posicion_principal: posicion,
-      is_two_factors: twoFactorEnabled,
-      avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
-      tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
-    },
     user: {
-      id_usuario: idUsuario,
       name: nombre,
-      nombre,
-      email: currentUser.email ?? "",
       position: posicion,
-      posicion_principal: posicion,
       avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
       initials: initialsFromName(nombre),
       tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
     },
     security: {
-      twoFactorEnabled,
-      twoFactorLabel: twoFactorEnabled
+      twoFactorEnabled: Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false),
+      twoFactorLabel: currentUser.is_two_factors
         ? "Activo según la sesión actual"
         : "Pendiente de activar",
       actions: ["Cambiar contraseña", "Revisar estado de cuenta"],

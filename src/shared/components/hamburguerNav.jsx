@@ -9,7 +9,7 @@ const navigationItems = [
   { key: "create-project", icon: "add_box", label: "Crear proyecto" },
 ];
 
-export default function HamburguerNav({ activeView = "board", onNavigate, onLogout }) {
+export default function HamburguerNav({ activeView = "board", onNavigate }) {
   return (
     <aside className="app-sidebar d-flex flex-column py-3">
       <nav className="flex-grow-1">
@@ -43,11 +43,6 @@ export default function HamburguerNav({ activeView = "board", onNavigate, onLogo
         >
           <span className="material-symbols-outlined">settings</span>
           <span className="sidebar-label">Perfil</span>
-        </button>
-
-        <button type="button" className="sidebar-link text-danger" onClick={onLogout}>
-          <span className="material-symbols-outlined">logout</span>
-          <span className="sidebar-label">Cerrar sesión</span>
         </button>
       </nav>
     </aside>
