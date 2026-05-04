@@ -4,9 +4,11 @@ import "../styles/avatar.css";
 import ButtonActionGroup from "./actions/ButtonActionGroup";
 import { useSessionContext } from "../context/SessionContext";
 import { API_ENDPOINTS } from "../services/apiEndpoints";
+import { initialsFromName } from "../data/databaseAdapters";
 
 export default function NavBar() {
   const { currentUser } = useSessionContext();
+  const initials = initialsFromName(currentUser?.nombre ?? currentUser?.email ?? "Usuario");
 
   const topbarActions = [
     {
@@ -51,17 +53,23 @@ export default function NavBar() {
         <div className="position-relative">
           <ButtonActionGroup actions={[topbarActions[0]]} className="d-flex" />
           <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-primary">
-            5
+            0
           </span>
         </div>
 
         <ButtonActionGroup actions={[topbarActions[1]]} className="d-flex" />
 
-        <img
-          className="avatar ms-1"
-          alt={currentUser?.nombre || "User profile"}
-          src={currentUser?.avatarUrl || "https://i.pravatar.cc/80?img=12"}
-        />
+        {currentUser?.avatarUrl ? (
+          <img
+            className="avatar ms-1"
+            alt={currentUser?.nombre || "User profile"}
+            src={currentUser.avatarUrl}
+          />
+        ) : (
+          <div className="avatar ms-1 bg-primary-subtle text-primary border d-flex align-items-center justify-content-center fw-bold">
+            {initials || "U"}
+          </div>
+        )}
       </div>
     </header>
   );

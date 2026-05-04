@@ -18,11 +18,15 @@ export default function ProjectIssueFields({
           value={idProyecto}
           onChange={(event) => onChange("id_proyecto", event.target.value)}
         >
-          {projects.map((currentProject) => (
-            <option key={currentProject.value} value={currentProject.value}>
-              {currentProject.label}
-            </option>
-          ))}
+          {projects.length === 0 ? (
+            <option value="">Conecta API_ENDPOINTS.proyectos.list</option>
+          ) : (
+            projects.map((currentProject) => (
+              <option key={currentProject.value} value={currentProject.value}>
+                {currentProject.label}
+              </option>
+            ))
+          )}
         </select>
       </div>
 
@@ -37,11 +41,15 @@ export default function ProjectIssueFields({
           value={idUsuario}
           onChange={(event) => onChange("id_usuario", event.target.value)}
         >
-          {users.map((user) => (
-            <option key={user.value} value={user.value}>
-              {user.label}
-            </option>
-          ))}
+          {users.length === 0 ? (
+            <option value="">Conecta API_ENDPOINTS.usuarios.list</option>
+          ) : (
+            users.map((user) => (
+              <option key={user.value} value={user.value}>
+                {user.label}
+              </option>
+            ))
+          )}
         </select>
       </div>
     </section>

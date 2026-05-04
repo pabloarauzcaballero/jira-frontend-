@@ -1,0 +1,143 @@
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 24px;
+  background-color: #f9f9ff;
+  color: #091c35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  background-color: #ffffff;
+  border: 1px solid #c3c6d6;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.login-brand {
+  margin-bottom: 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-brand-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  background-color: #003d9b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.login-brand-icon .material-symbols-outlined {
+  font-size: 28px;
+}
+
+.login-title {
+  margin: 0;
+  color: #091c35;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.login-subtitle {
+  margin: 8px 0 0;
+  color: #434654;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #434654;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.login-input {
+  height: 40px;
+  border-color: #c3c6d6;
+  background-color: #ffffff;
+  color: #091c35;
+  font-size: 14px;
+}
+
+.login-input::placeholder {
+  color: #737685;
+}
+
+.login-input:focus {
+  border-color: #003d9b;
+  box-shadow: 0 0 0 1px #003d9b;
+}
+
+.login-submit-btn {
+  height: 40px;
+  margin-top: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background-color: #003d9b;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.login-submit-btn:hover {
+  background-color: #0040a2;
+  color: #ffffff;
+}
+
+.login-links {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(195, 198, 214, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-link {
+  color: #003d9b;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 576px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 24px;
+  }
+}

@@ -20,7 +20,7 @@ export default function MemberList({ members = [], onRemoveMember }) {
         ))
       ) : (
         <div className="create-project-empty-members">
-          No hay usuarios agregados a la vista previa.
+          No hay usuarios agregados todavía.
         </div>
       )}
     </div>

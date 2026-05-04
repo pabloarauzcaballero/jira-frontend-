@@ -9,9 +9,15 @@ export default function RecentActivityCard({ activities = [] }) {
       </h3>
 
       <div className="profile-activity-list">
-        {activities.map((activity) => (
-          <ActivityItem key={activity.id} activity={activity} />
-        ))}
+        {activities.length > 0 ? (
+          activities.map((activity) => (
+            <ActivityItem key={activity.id} activity={activity} />
+          ))
+        ) : (
+          <p className="text-secondary small mb-0">
+            Conecta el endpoint de actividad para mostrar movimientos recientes.
+          </p>
+        )}
       </div>
 
       <button type="button" className="profile-history-button">

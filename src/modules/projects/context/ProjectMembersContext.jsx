@@ -1,8 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { API_ENDPOINTS } from "../../../shared/services/apiEndpoints";
-import { usuarios } from "../../../shared/data/mockDatabase";
-import { toMember, toUserOption } from "../../../shared/data/databaseAdapters";
+import { toMember } from "../../../shared/data/databaseAdapters";
 import { estadoRegistroOptions } from "../../../shared/data/databaseOptions";
 
 const ProjectMembersContext = createContext(null);
@@ -25,12 +24,16 @@ function getMemberSearchText(member = {}) {
     .toLowerCase();
 }
 
-function buildMemberFromUserId(idUsuario) {
-  const usuario = usuarios.find((currentUser) => currentUser.id_usuario === Number(idUsuario));
+function buildMemberFromUserOption(idUsuario, userOptions = []) {
+  const option = userOptions.find((currentOption) => Number(currentOption.value) === Number(idUsuario));
 
-  if (!usuario) return null;
+  if (!option) return null;
 
-  return toMember(usuario, { ticketsAsignados: [] });
+  return toMember(option.raw ?? {
+    id_usuario: Number(option.value),
+    nombre: option.label,
+    posicion_principal: "Pendiente de backend",
+  });
 }
 
 export function ProjectMembersProvider({
@@ -53,13 +56,11 @@ export function ProjectMembersProvider({
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [memberDraft, setMemberDraft] = useState({});
 
-  const userOptions = useMemo(() => {
-    if (initialUsers.length > 0) return initialUsers;
+  useEffect(() => {
+    setMembers(initialMembers);
+  }, [initialMembers]);
 
-    return usuarios
-      .filter((usuario) => usuario.estado_registro === "ACTIVO")
-      .map(toUserOption);
-  }, [initialUsers]);
+  const userOptions = useMemo(() => initialUsers, [initialUsers]);
 
   const availableUserOptions = useMemo(() => {
     const currentMemberIds = new Set(members.map((member) => Number(member.id_usuario ?? member.id)));
@@ -94,7 +95,7 @@ export function ProjectMembersProvider({
   const addMember = useCallback(
     (payload = {}) => {
       const idUsuario = Number(payload.id_usuario ?? selectedUserId);
-      const newMember = buildMemberFromUserId(idUsuario);
+      const newMember = buildMemberFromUserOption(idUsuario, userOptions);
 
       if (!newMember) return null;
 
@@ -114,7 +115,7 @@ export function ProjectMembersProvider({
 
       return newMember;
     },
-    [availableUserOptions, onAddMember, selectedUserId]
+    [availableUserOptions, onAddMember, selectedUserId, userOptions]
   );
 
   const startEditMember = useCallback((member) => {
@@ -189,7 +190,7 @@ export function ProjectMembersProvider({
       const newTicket = {
         id: newTicketId,
         nombre: `TCK-${String(newTicketId).slice(-4)}`,
-        descripcion: "Request temporal creada desde ProjectMembersContext.",
+        descripcion: "Request pendiente de persistir con el endpoint real.",
         status: "PENDIENTE",
         prioridad: "MEDIA",
         url: "#",
@@ -238,7 +239,7 @@ export function ProjectMembersProvider({
           }),
           onExecute: findMember,
           pendingMessage:
-            "La búsqueda local ya funciona. Reemplaza TODO_ENDPOINT por tu endpoint de usuarios para buscar contra backend.",
+            "El flujo de búsqueda del front ya está listo. Reemplaza TODO_ENDPOINT por tu endpoint de usuarios para buscar contra backend.",
         },
       ],
       addForm: [
@@ -246,7 +247,7 @@ export function ProjectMembersProvider({
           id: "project.members.addMember",
           label: "Añadir miembro",
           icon: "person_add",
-          endpoint: API_ENDPOINTS.proyectoAsignacion.create,
+          endpoint: API_ENDPOINTS.proyectos.miembros.create,
           method: "POST",
           className: "btn btn-primary d-flex align-items-center gap-1",
           buildPayload: (payload) => ({
@@ -255,7 +256,7 @@ export function ProjectMembersProvider({
           }),
           onExecute: addMember,
           pendingMessage:
-            "La UI ya añade el miembro en memoria. Conecta este botón con el endpoint de proyecto_asignacion.create cuando tengas la ruta real.",
+            "El formulario está preparado. Conecta este botón con el endpoint de proyecto_asignacion.create cuando tengas la ruta real.",
         },
       ],
       editForm: [
@@ -263,19 +264,17 @@ export function ProjectMembersProvider({
           id: "project.members.saveMemberChanges",
           label: "Guardar cambios",
           icon: "save",
-          endpoint: API_ENDPOINTS.usuarios.update,
+          endpoint: API_ENDPOINTS.proyectos.miembros.update,
           method: "PATCH",
           className: "btn btn-sm btn-primary d-flex align-items-center gap-1",
           buildPayload: (payload) => ({
             id_usuario: Number(payload.id_usuario),
-            nombre: payload.nombre,
-            email: payload.email,
-            posicion_principal: payload.posicion_principal,
+            cargo: payload.cargo ?? payload.rol ?? "MIEMBRO",
             estado_registro: payload.estado_registro,
           }),
           onExecute: saveMemberChanges,
           pendingMessage:
-            "La modificación ya funciona en memoria. Conecta este botón con tu endpoint real para actualizar usuarios/proyecto_asignacion.",
+            "La edición del formulario está lista. Conecta este botón con tu endpoint real para actualizar usuarios/proyecto_asignacion.",
         },
         {
           id: "project.members.cancelMemberEdit",
@@ -296,7 +295,7 @@ export function ProjectMembersProvider({
         {
           id: "project.members.unlink",
           label: "Desvincular",
-          endpoint: API_ENDPOINTS.proyectoAsignacion.delete,
+          endpoint: API_ENDPOINTS.proyectos.miembros.delete,
           method: "DELETE",
           className: "btn btn-sm btn-outline-danger d-flex align-items-center gap-1",
           confirm: {

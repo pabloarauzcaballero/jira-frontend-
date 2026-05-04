@@ -8,6 +8,21 @@ export default function GeneralDetailsSection({
       <h2 className="create-project-section-title">Datos del proyecto</h2>
 
       <div className="mb-3">
+        <label className="form-label create-project-label" htmlFor="nombre">
+          Nombre <span className="text-danger">*</span>
+        </label>
+
+        <input
+          id="nombre"
+          type="text"
+          className="form-control create-project-input"
+          placeholder="Ej. Plataforma interna de tickets"
+          value={projectData.nombre}
+          onChange={(event) => onProjectChange("nombre", event.target.value)}
+        />
+      </div>
+
+      <div className="mb-3">
         <label className="form-label create-project-label" htmlFor="descripcion">
           Descripción <span className="text-danger">*</span>
         </label>

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { buildTicketCreatePayload } from "../../../shared/data/databaseAdapters";
 import { API_ENDPOINTS } from "../../../shared/services/apiEndpoints";
@@ -30,6 +30,14 @@ export function CreateIssueProvider({
     criterios_aceptacion: [],
   });
 
+  useEffect(() => {
+    setFormData((currentData) => ({
+      ...currentData,
+      id_proyecto: currentData.id_proyecto || projects[0]?.value || "",
+      id_usuario: currentData.id_usuario || users[0]?.value || "",
+    }));
+  }, [projects, users]);
+
   const handleChange = useCallback((field, value) => {
     setFormData((currentData) => ({
       ...currentData,
@@ -60,11 +68,10 @@ export function CreateIssueProvider({
           className: "btn create-issue-submit-btn",
           buildPayload,
           onExecute: (payload) => {
-            console.log("Payload DB para crear ticket:", payload);
             onSubmit?.(payload);
           },
-          successTitle: "Ticket preparado",
-          successMessage: "El payload del ticket quedó armado con la estructura compatible con PostgreSQL.",
+          successTitle: "Ticket creado",
+          successMessage: "El ticket fue enviado al backend usando /api/tickets.",
           showPayloadOnSuccess: true,
         },
       ],

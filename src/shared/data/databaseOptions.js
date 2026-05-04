@@ -5,9 +5,7 @@ export const TICKET_PRIORIDADES = ["BAJA", "MEDIA", "ALTA", "CRITICA"];
 export const TICKET_STATUS = [
   "PENDIENTE",
   "EN_PROGRESO",
-  "EN_REVISION",
-  "FINALIZADO",
-  "CANCELADO",
+  "COMPLETADO",
 ];
 
 export const DEFAULT_TIMEZONE = "America/La_Paz";

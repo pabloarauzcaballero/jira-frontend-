@@ -1,14 +1,20 @@
-    import ProfileTag from "./ProfileTag";
+import ProfileTag from "./ProfileTag";
 
-export default function ProfileSummaryCard({ user }) {
+export default function ProfileSummaryCard({ user = {} }) {
   return (
     <article className="profile-card profile-summary-card">
       <div className="profile-avatar-wrapper">
-        <img
-          src={user.avatarUrl}
-          alt={user.name}
-          className="profile-avatar"
-        />
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={user.name}
+            className="profile-avatar"
+          />
+        ) : (
+          <div className="profile-avatar bg-primary-subtle text-primary border d-flex align-items-center justify-content-center fw-bold">
+            {user.initials || "U"}
+          </div>
+        )}
 
         <button
           type="button"

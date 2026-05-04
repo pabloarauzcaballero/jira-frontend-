@@ -4,19 +4,9 @@ import {
   estadoRegistroOptions,
   formatDbLabel,
 } from "./databaseOptions.js";
-import {
-  usuarios,
-  usuarios_x_tag,
-  proyectos,
-  tickets,
-  proyecto_asignacion,
-  ticket_actualizacion,
-  ticket_acciones,
-  ticket_criterios_aceptacion,
-} from "./mockDatabase.js";
 
 export function initialsFromName(name = "") {
-  return name
+  return String(name)
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -35,309 +25,264 @@ export function formatDateTime(value) {
 }
 
 export function truncateText(value = "", maxLength = 64) {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 3)}...`;
+  const text = String(value ?? "");
+
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 3)}...`;
 }
 
-export function getUsuarioById(idUsuario) {
-  return usuarios.find((usuario) => usuario.id_usuario === Number(idUsuario));
-}
+export function toUserOption(usuario = {}) {
+  const idUsuario = usuario.id_usuario ?? usuario.id;
+  const nombre = usuario.nombre ?? usuario.name ?? usuario.email ?? "Usuario";
+  const posicion = usuario.posicion_principal ?? usuario.position ?? "Sin posición";
 
-export function getProyectoById(idProyecto) {
-  return proyectos.find((proyecto) => proyecto.id_proyecto === Number(idProyecto));
-}
-
-export function getTicketById(idTicket) {
-  return tickets.find((ticket) => ticket.id_ticket === Number(idTicket));
-}
-
-export function getAsignacionByTicketId(idTicket) {
-  return proyecto_asignacion.find(
-    (asignacion) => asignacion.id_ticket === Number(idTicket)
-  );
-}
-
-export function toUserOption(usuario) {
   return {
-    value: String(usuario.id_usuario),
-    label: `${usuario.nombre} — ${usuario.posicion_principal}`,
+    value: idUsuario ? String(idUsuario) : "",
+    label: `${nombre} — ${posicion}`,
+    raw: usuario,
   };
 }
 
-export function toProjectOption(proyecto) {
+export function toProjectOption(proyecto = {}) {
+  const idProyecto = proyecto.id_proyecto ?? proyecto.id;
+  const nombre = proyecto.nombre ?? proyecto.name ?? `Proyecto #${idProyecto ?? "N/D"}`;
+  const descripcion = proyecto.descripcion ?? proyecto.description ?? "Proyecto sin descripción";
+
   return {
-    value: String(proyecto.id_proyecto),
-    label: `Proyecto #${proyecto.id_proyecto} — ${truncateText(proyecto.descripcion, 72)}`,
+    value: idProyecto ? String(idProyecto) : "",
+    label: `${nombre} — ${truncateText(descripcion, 72)}`,
+    raw: proyecto,
   };
 }
 
-export function toMember(usuario, extra = {}) {
-  const tags = usuarios_x_tag
-    .filter((row) => row.id_usuario === usuario.id_usuario)
-    .map((row) => row.tag);
+export function toMember(usuario = {}, extra = {}) {
+  const idUsuario = usuario.id_usuario ?? usuario.id;
+  const nombre = usuario.nombre ?? usuario.name ?? usuario.email ?? "Usuario";
+  const posicion = usuario.posicion_principal ?? usuario.position ?? usuario.rol ?? "Sin posición asignada";
 
   return {
-    id: usuario.id_usuario,
-    id_usuario: usuario.id_usuario,
-    nombre: usuario.nombre,
-    email: usuario.email,
-    rol: usuario.posicion_principal,
-    posicion_principal: usuario.posicion_principal,
-    estado_registro: usuario.estado_registro,
+    id: idUsuario,
+    id_usuario: idUsuario,
+    nombre,
+    email: usuario.email ?? "",
+    rol: posicion,
+    posicion_principal: posicion,
+    estado_registro: usuario.estado_registro ?? "ACTIVO",
     timezone: usuario.timezone,
-    is_two_factors: usuario.is_two_factors,
-    urlProfile: usuario.urlProfile,
-    initials: initialsFromName(usuario.nombre),
-    tags,
+    is_two_factors: Boolean(usuario.is_two_factors ?? usuario.isTwoFactors ?? false),
+    urlProfile: usuario.urlProfile ?? usuario.avatarUrl ?? null,
+    initials: initialsFromName(nombre),
+    tags: Array.isArray(usuario.tags) ? usuario.tags : [],
+    ticketsAsignados: Array.isArray(usuario.ticketsAsignados) ? usuario.ticketsAsignados : [],
     ...extra,
   };
 }
 
-export function getProjectMembers(idProyecto) {
-  const assignments = proyecto_asignacion.filter(
-    (asignacion) => asignacion.id_proyecto === Number(idProyecto)
-  );
-
-  const userMap = new Map();
-
-  assignments.forEach((asignacion) => {
-    const usuario = getUsuarioById(asignacion.id_usuario);
-    const ticket = getTicketById(asignacion.id_ticket);
-
-    if (!usuario || !ticket) return;
-
-    const currentMember = userMap.get(usuario.id_usuario) ??
-      toMember(usuario, { ticketsAsignados: [] });
-
-    currentMember.ticketsAsignados.push({
-      id: ticket.id_ticket,
-      nombre: `TCK-${ticket.id_ticket}`,
-      descripcion: ticket.nombre,
-      status: ticket.status,
-      prioridad: ticket.prioridad,
-      url: "#",
-    });
-
-    userMap.set(usuario.id_usuario, currentMember);
-  });
-
-  return Array.from(userMap.values());
-}
-
-export function getProjectCards() {
-  return proyectos.map((proyecto) => {
-    const members = getProjectMembers(proyecto.id_proyecto);
-
-    return {
-      id: proyecto.id_proyecto,
-      id_proyecto: proyecto.id_proyecto,
-      name: `Proyecto #${proyecto.id_proyecto}`,
-      key: `PROY-${proyecto.id_proyecto}`,
-      initials: `P${proyecto.id_proyecto}`,
-      status: proyecto.estado_registro,
-      tone: proyecto.estado_registro === "INACTIVO" ? "tertiary" : "primary",
-      description: proyecto.descripcion,
-      updatedAt: `Actualizado: ${formatDateTime(proyecto.actualizado_en)}`,
-      members,
-    };
-  });
-}
-
-export function toBoardTicket(ticket) {
-  const asignacion = getAsignacionByTicketId(ticket.id_ticket);
-  const assignee = asignacion ? getUsuarioById(asignacion.id_usuario) : null;
+export function toProjectCard(proyecto = {}, members = []) {
+  const idProyecto = proyecto.id_proyecto ?? proyecto.id;
+  const estado = proyecto.estado_registro ?? proyecto.status ?? "ACTIVO";
 
   return {
-    id: ticket.id_ticket,
-    id_ticket: ticket.id_ticket,
-    title: ticket.nombre,
-    description: ticket.descripcion,
-    issueKey: `TCK-${ticket.id_ticket}`,
-    priority: ticket.prioridad,
-    status: ticket.status,
-    estado_registro: ticket.estado_registro,
-    assigneeUrl: assignee?.urlProfile ?? "",
-    assigneeName: assignee?.nombre ?? "Sin asignar",
+    id: idProyecto,
+    id_proyecto: idProyecto,
+    name: proyecto.nombre ?? proyecto.name ?? `Proyecto #${idProyecto ?? "N/D"}`,
+    key: proyecto.key ?? `PROY-${idProyecto ?? "N/D"}`,
+    initials: proyecto.initials ?? `P${idProyecto ?? ""}`,
+    status: estado,
+    tone: estado === "INACTIVO" ? "tertiary" : "primary",
+    description: proyecto.descripcion ?? proyecto.description ?? "Sin descripción del proyecto.",
+    updatedAt: `Actualizado: ${formatDateTime(proyecto.actualizado_en ?? proyecto.updatedAt)}`,
+    members,
   };
 }
 
-export function groupTicketsByStatus() {
+export function splitProjectCards(proyectos = []) {
+  const cards = proyectos.map((proyecto) => toProjectCard(proyecto, proyecto.members ?? []));
+
+  return {
+    currentProjects: cards.filter((project) => project.status !== "INACTIVO"),
+    recentProjects: cards.filter((project) => project.status === "INACTIVO"),
+  };
+}
+
+export function toBoardTicket(ticket = {}, assignee = null) {
+  const idTicket = ticket.id_ticket ?? ticket.id;
+
+  return {
+    id: idTicket,
+    id_ticket: idTicket,
+    title: ticket.nombre ?? ticket.title ?? "Ticket sin título",
+    description: ticket.descripcion ?? ticket.description ?? "Sin descripción.",
+    issueKey: ticket.issueKey ?? `TCK-${idTicket ?? "N/D"}`,
+    priority: ticket.prioridad ?? ticket.priority ?? "MEDIA",
+    status: ticket.status ?? "PENDIENTE",
+    estado_registro: ticket.estado_registro ?? "ACTIVO",
+    assigneeUrl: assignee?.urlProfile ?? assignee?.avatarUrl ?? "",
+    assigneeName: assignee?.nombre ?? assignee?.name ?? "Sin asignar",
+  };
+}
+
+export function groupTicketsByStatus(tickets = []) {
   return ticketStatusOptions.reduce((accumulator, statusOption) => {
     accumulator[statusOption.value] = tickets
       .filter((ticket) => ticket.status === statusOption.value)
-      .map(toBoardTicket);
+      .map((ticket) => toBoardTicket(ticket, ticket.assignee));
 
     return accumulator;
   }, {});
 }
 
-export function getIssueDetail(idTicket = 102) {
-  const ticket = getTicketById(idTicket) ?? tickets[0];
-  const asignacion = getAsignacionByTicketId(ticket.id_ticket);
-  const proyecto = asignacion ? getProyectoById(asignacion.id_proyecto) : null;
-  const assignee = asignacion ? getUsuarioById(asignacion.id_usuario) : null;
-  const reporter = getUsuarioById(ticket.user_id_creacion);
-  const acciones = ticket_acciones
-    .filter((row) => row.id_ticket === ticket.id_ticket)
-    .map((row) => row.accion_nombre);
-  const acceptanceCriteria = ticket_criterios_aceptacion
-    .filter((row) => row.id_ticket === ticket.id_ticket)
-    .map((row) => row.criterios_aceptacion);
-
-  return {
-    key: `TCK-${ticket.id_ticket}`,
-    workspace: "Base PostgreSQL",
-    projectName: proyecto
-      ? `Proyecto #${proyecto.id_proyecto}`
-      : "Sin proyecto asignado",
-    projectShortName: proyecto ? `PROY-${proyecto.id_proyecto}` : "N/A",
-    title: ticket.nombre,
-    type: "Ticket",
-    status: formatDbLabel(ticket.status),
-    statusValue: ticket.status,
-    priority: formatDbLabel(ticket.prioridad),
-    priorityValue: ticket.prioridad,
-    createdAt: `Creado: ${formatDateTime(ticket.fecha_creacion)}`,
-    createdDate: formatDateTime(ticket.fecha_creacion),
-    updatedAt: formatDateTime(ticket.actualizado_en),
-    estado_registro: ticket.estado_registro,
-    assignee: assignee
-      ? {
-          name: assignee.nombre,
-          role: assignee.posicion_principal,
-          avatarUrl: assignee.urlProfile,
-        }
-      : {
-          name: "Sin asignar",
-          role: "N/A",
-          avatarUrl: "https://i.pravatar.cc/80?img=12",
-        },
-    reporter: reporter
-      ? {
-          name: reporter.nombre,
-          avatarUrl: reporter.urlProfile,
-        }
-      : {
-          name: "Sin reporter",
-          avatarUrl: "https://i.pravatar.cc/80?img=12",
-        },
-    description: {
-      paragraphs: [ticket.descripcion],
-      points: acciones,
-      acceptanceCriteria,
-    },
-  };
+export function buildEmptyTicketsByStatus(statuses = ticketStatusOptions) {
+  return statuses.reduce((accumulator, statusOption) => {
+    accumulator[statusOption.value] = [];
+    return accumulator;
+  }, {});
 }
 
-export function getIssueActivities(idTicket = 102) {
-  const asignacion = getAsignacionByTicketId(idTicket);
-
-  if (!asignacion) return [];
-
-  return ticket_actualizacion
-    .filter((row) => row.id_asignacion === asignacion.id_asignacion)
-    .map((row) => {
-      const usuario = getUsuarioById(row.user_id_creacion);
-
-      return {
-        id: row.id_actualizacion,
-        user: {
-          name: usuario?.nombre ?? "Usuario del sistema",
-          avatarUrl: usuario?.urlProfile ?? "https://i.pravatar.cc/80?img=12",
-        },
-        action: "registró una actualización",
-        date: formatDateTime(row.fecha_creacion),
-        comment: row.actualizacion,
-        status: formatDbLabel(row.estado_registro),
-      };
-    });
-}
-
-export function getCurrentUser(idUsuario = 1) {
-  const usuario = getUsuarioById(idUsuario) ?? usuarios[0];
-
-  return {
-    id_usuario: usuario.id_usuario,
-    name: usuario.nombre,
-    avatarUrl: usuario.urlProfile || "https://i.pravatar.cc/80?img=12",
-  };
-}
-
-export function getProfileData(idUsuario = 1) {
-  const usuario = getUsuarioById(idUsuario) ?? usuarios[0];
-  const tags = usuarios_x_tag
-    .filter((row) => row.id_usuario === usuario.id_usuario)
-    .map((row) => row.tag);
-  const manager = getUsuarioById(usuario.user_id_creacion) ?? usuarios[4];
+export function buildProfileDataFromUser(usuario = null) {
+  const currentUser = usuario ?? {};
+  const nombre = currentUser.nombre ?? currentUser.name ?? "Usuario";
+  const posicion = currentUser.posicion_principal ?? currentUser.position ?? "Sin posición asignada";
 
   return {
     user: {
-      name: usuario.nombre,
-      position: usuario.posicion_principal,
-      avatarUrl: usuario.urlProfile || "https://i.pravatar.cc/160?img=12",
-      tags,
+      name: nombre,
+      position: posicion,
+      avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
+      initials: initialsFromName(nombre),
+      tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
     },
     security: {
-      twoFactorEnabled: usuario.is_two_factors,
-      twoFactorLabel: usuario.is_two_factors
-        ? "Activo según usuarios.is_two_factors"
-        : "Inactivo según usuarios.is_two_factors",
-      actions: ["Cambiar password_hash", "Revisar estado_registro"],
+      twoFactorEnabled: Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false),
+      twoFactorLabel: currentUser.is_two_factors
+        ? "Activo según la sesión actual"
+        : "Pendiente de activar o sincronizar con backend",
+      actions: ["Cambiar contraseña", "Revisar estado de cuenta"],
     },
     accountDetails: {
-      email: usuario.email,
-      phone: usuario.telefono ?? "Sin teléfono",
-      timezone: usuario.timezone,
+      email: currentUser.email || "Sin email sincronizado",
+      phone: currentUser.telefono ?? currentUser.phone ?? "Sin teléfono",
+      timezone: currentUser.timezone ?? "America/La_Paz",
       manager: {
-        name: manager?.nombre ?? "Sin responsable",
-        initials: initialsFromName(manager?.nombre ?? "SR"),
+        name: "Pendiente de backend",
+        initials: "PB",
       },
     },
-    activities: getIssueActivities(102).map((activity) => ({
-      id: activity.id,
-      icon: "history",
-      tone: "primary",
-      userName: activity.user.name,
-      action: activity.action,
-      issue: "TCK-102",
-      comment: activity.comment,
-      date: activity.date,
-    })),
+    activities: [],
   };
 }
 
-export function buildTicketCreatePayload(formData, reporterId = 1) {
+export function buildEmptyIssueDetail(currentUser = null) {
+  const assigneeName = currentUser?.nombre ?? currentUser?.name ?? "Sin asignar";
+
   return {
-    ticket: {
-      nombre: formData.nombre.trim(),
-      descripcion: formData.descripcion.trim(),
-      prioridad: formData.prioridad,
-      status: formData.status,
-      estado_registro: "ACTIVO",
-      user_id_creacion: reporterId,
-      user_id_modificacion: reporterId,
-      version: 1,
+    key: "TCK-PENDIENTE",
+    workspace: "Workspace principal",
+    projectName: "Proyecto pendiente de selección",
+    projectShortName: "PROY",
+    title: "Ticket pendiente de cargar",
+    type: "Ticket",
+    status: formatDbLabel("PENDIENTE"),
+    statusValue: "PENDIENTE",
+    priority: formatDbLabel("MEDIA"),
+    priorityValue: "MEDIA",
+    createdAt: "Creado: pendiente de backend",
+    createdDate: "Pendiente",
+    updatedAt: "Pendiente",
+    estado_registro: "ACTIVO",
+    assignee: {
+      name: assigneeName,
+      role: currentUser?.posicion_principal ?? currentUser?.position ?? "N/A",
+      avatarUrl: currentUser?.avatarUrl ?? currentUser?.urlProfile ?? null,
+      initials: initialsFromName(assigneeName),
     },
-    proyecto_asignacion: {
-      id_proyecto: Number(formData.id_proyecto),
-      id_usuario: Number(formData.id_usuario),
-      estado_registro: "ACTIVO",
-      user_id_creacion: reporterId,
-      user_id_modificacion: reporterId,
-      version: 1,
+    reporter: {
+      name: currentUser?.nombre ?? currentUser?.name ?? "Pendiente",
+      avatarUrl: currentUser?.avatarUrl ?? currentUser?.urlProfile ?? null,
+      initials: initialsFromName(currentUser?.nombre ?? currentUser?.name ?? "Pendiente"),
     },
-    ticket_acciones: formData.acciones
-      .filter(Boolean)
-      .map((accion_nombre) => ({ accion_nombre })),
-    ticket_criterios_aceptacion: formData.criterios_aceptacion
-      .filter(Boolean)
-      .map((criterios_aceptacion) => ({ criterios_aceptacion })),
+    description: {
+      paragraphs: [
+        "Conecta API_ENDPOINTS.tickets.detail para cargar el detalle real del ticket desde tu backend.",
+      ],
+      points: [],
+      acceptanceCriteria: [],
+    },
+  };
+}
+
+export function buildTicketCreatePayload(formData, reporterId = null) {
+  return {
+    nombre: formData.nombre.trim(),
+    descripcion: formData.descripcion.trim(),
+    prioridad: formData.prioridad,
+    id_proyecto: Number(formData.id_proyecto),
+    id_usuario: Number(formData.id_usuario || reporterId),
+    tasks: formData.acciones.filter(Boolean),
+    acceptanceCriteria: formData.criterios_aceptacion.filter(Boolean),
+  };
+}
+
+export function unwrapProyectoMiembro(row = {}) {
+  const usuario = row.usuario ?? row.user ?? row;
+
+  return toMember(usuario, {
+    id: usuario.id_usuario ?? row.id_usuario,
+    id_usuario: usuario.id_usuario ?? row.id_usuario,
+    cargo: row.cargo ?? usuario.cargo ?? "MIEMBRO",
+    rol: row.cargo ?? usuario.posicion_principal ?? "MIEMBRO",
+    estado_registro: row.estado_registro ?? usuario.estado_registro ?? "ACTIVO",
+  });
+}
+
+export function toIssueDetail(ticket = {}, currentUser = null) {
+  if (!ticket) return buildEmptyIssueDetail(currentUser);
+
+  const idTicket = ticket.id_ticket ?? ticket.id;
+  const title = ticket.nombre ?? ticket.title ?? "Ticket sin título";
+  const statusValue = ticket.status ?? "PENDIENTE";
+  const priorityValue = ticket.prioridad ?? "MEDIA";
+  const firstAssignment = Array.isArray(ticket.asignaciones) ? ticket.asignaciones[0] : null;
+  const assignee = firstAssignment?.usuario ?? currentUser;
+  const assigneeName = assignee?.nombre ?? assignee?.email ?? "Sin asignar";
+
+  return {
+    key: `TCK-${idTicket ?? "N/D"}`,
+    workspace: "Workspace principal",
+    projectName: ticket.proyecto?.nombre ?? `Proyecto #${firstAssignment?.id_proyecto ?? "N/D"}`,
+    projectShortName: `PROY-${firstAssignment?.id_proyecto ?? "N/D"}`,
+    title,
+    type: "Ticket",
+    status: formatDbLabel(statusValue),
+    statusValue,
+    priority: formatDbLabel(priorityValue),
+    priorityValue,
+    createdAt: `Creado: ${formatDateTime(ticket.fecha_creacion)}`,
+    createdDate: formatDateTime(ticket.fecha_creacion),
+    updatedAt: formatDateTime(ticket.actualizado_en ?? ticket.fecha_creacion),
+    estado_registro: ticket.estado_registro ?? "ACTIVO",
+    assignee: {
+      name: assigneeName,
+      role: assignee?.posicion_principal ?? "N/A",
+      avatarUrl: assignee?.avatarUrl ?? assignee?.urlProfile ?? null,
+      initials: initialsFromName(assigneeName),
+    },
+    reporter: {
+      name: currentUser?.nombre ?? currentUser?.email ?? "Pendiente",
+      avatarUrl: currentUser?.avatarUrl ?? currentUser?.urlProfile ?? null,
+      initials: initialsFromName(currentUser?.nombre ?? currentUser?.email ?? "Pendiente"),
+    },
+    description: {
+      paragraphs: [ticket.descripcion || "Sin descripción."],
+      points: Array.isArray(ticket.tasks) ? ticket.tasks : [],
+      acceptanceCriteria: Array.isArray(ticket.acceptanceCriteria) ? ticket.acceptanceCriteria : [],
+    },
   };
 }
 
 export const databaseSelectOptions = {
-  usuarios: usuarios.filter((usuario) => usuario.estado_registro === "ACTIVO").map(toUserOption),
-  proyectos: proyectos.filter((proyecto) => proyecto.estado_registro === "ACTIVO").map(toProjectOption),
+  usuarios: [],
+  proyectos: [],
   prioridades: ticketPriorityOptions,
   statuses: ticketStatusOptions,
   estadosRegistro: estadoRegistroOptions,

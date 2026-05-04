@@ -1,4 +1,4 @@
-export default function StatusAssigneeCard({ status, assignee }) {
+export default function StatusAssigneeCard({ status, assignee = {} }) {
   return (
     <article className="issue-side-card">
       <div className="issue-side-block">
@@ -16,11 +16,17 @@ export default function StatusAssigneeCard({ status, assignee }) {
         <div className="issue-side-label">Usuario asignado</div>
 
         <div className="issue-assignee">
-          <img
-            src={assignee.avatarUrl}
-            alt={assignee.name}
-            className="issue-assignee-avatar"
-          />
+          {assignee.avatarUrl ? (
+            <img
+              src={assignee.avatarUrl}
+              alt={assignee.name}
+              className="issue-assignee-avatar"
+            />
+          ) : (
+            <div className="issue-assignee-avatar bg-primary-subtle text-primary border d-flex align-items-center justify-content-center fw-bold">
+              {assignee.initials || "?"}
+            </div>
+          )}
 
           <div>
             <div className="fw-semibold">{assignee.name}</div>

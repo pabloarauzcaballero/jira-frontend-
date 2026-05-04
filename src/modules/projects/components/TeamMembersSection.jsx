@@ -13,7 +13,7 @@ export default function TeamMembersSection({
         <h2 className="create-project-section-title mb-1">Usuarios relacionados</h2>
 
         <p className="create-project-section-description">
-          Vista previa de usuarios existentes en la tabla usuarios. La asignación persistente requiere id_ticket, id_proyecto e id_usuario en proyecto_asignacion.
+          Usuarios disponibles desde la sesión o desde el endpoint de usuarios. La asignación persistente requiere id_ticket, id_proyecto e id_usuario en proyecto_asignacion.
         </p>
       </div>
 

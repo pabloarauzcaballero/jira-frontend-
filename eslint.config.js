@@ -22,5 +22,8 @@ export default defineConfig([
         ecmaFeatures: { jsx: true },
       },
     },
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])

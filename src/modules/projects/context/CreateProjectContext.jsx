@@ -1,11 +1,23 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 import { estadoRegistroOptions } from "../../../shared/data/databaseOptions";
-import { getUsuarioById, toMember } from "../../../shared/data/databaseAdapters";
+import { toMember } from "../../../shared/data/databaseAdapters";
 import { API_ENDPOINTS } from "../../../shared/services/apiEndpoints";
 import { useSessionContext } from "../../../shared/context/SessionContext";
 
 const CreateProjectContext = createContext(null);
+
+function buildMemberFromOption(idUsuario, users = []) {
+  const selectedOption = users.find((userOption) => Number(userOption.value) === Number(idUsuario));
+
+  if (!selectedOption) return null;
+
+  return toMember(selectedOption.raw ?? {
+    id_usuario: Number(selectedOption.value),
+    nombre: selectedOption.label,
+    posicion_principal: "Pendiente de backend",
+  });
+}
 
 export function CreateProjectProvider({
   children,
@@ -16,9 +28,10 @@ export function CreateProjectProvider({
   onCancel,
 }) {
   const { currentUser } = useSessionContext();
-  const effectiveUserId = currentUserId ?? currentUser?.id_usuario ?? 1;
+  const effectiveUserId = currentUserId ?? currentUser?.id_usuario ?? null;
 
   const [projectData, setProjectData] = useState({
+    nombre: "",
     descripcion: "",
     estado_registro: "ACTIVO",
   });
@@ -32,21 +45,24 @@ export function CreateProjectProvider({
     }));
   }, []);
 
-  const handleAddMember = useCallback((idUsuario) => {
-    const usuario = getUsuarioById(idUsuario);
+  const handleAddMember = useCallback(
+    (idUsuario) => {
+      const usuario = buildMemberFromOption(idUsuario, users);
 
-    if (!usuario) return;
+      if (!usuario) return;
 
-    setMembers((currentMembers) => {
-      const alreadyAdded = currentMembers.some(
-        (member) => Number(member.id_usuario ?? member.id) === usuario.id_usuario
-      );
+      setMembers((currentMembers) => {
+        const alreadyAdded = currentMembers.some(
+          (member) => Number(member.id_usuario ?? member.id) === Number(usuario.id_usuario)
+        );
 
-      if (alreadyAdded) return currentMembers;
+        if (alreadyAdded) return currentMembers;
 
-      return [...currentMembers, toMember(usuario)];
-    });
-  }, []);
+        return [...currentMembers, usuario];
+      });
+    },
+    [users]
+  );
 
   const handleRemoveMember = useCallback((memberId) => {
     setMembers((currentMembers) =>
@@ -58,19 +74,15 @@ export function CreateProjectProvider({
 
   const buildPayload = useCallback(
     () => ({
-      proyecto: {
-        descripcion: projectData.descripcion.trim(),
-        estado_registro: projectData.estado_registro,
-        user_id_creacion: effectiveUserId,
-        user_id_modificacion: effectiveUserId,
-        version: 1,
-      },
-      usuarios_preseleccionados: members.map((member) => ({
+      nombre: projectData.nombre.trim(),
+      descripcion: projectData.descripcion.trim(),
+      user_id_creacion: effectiveUserId,
+      miembros: members.map((member) => ({
         id_usuario: member.id_usuario ?? member.id,
+        cargo: member.cargo ?? "MIEMBRO",
       })),
-      nota: "proyecto_asignacion requiere id_ticket; estos usuarios son preselección visual hasta crear tickets/asignaciones reales.",
     }),
-    [effectiveUserId, members, projectData.descripcion, projectData.estado_registro]
+    [effectiveUserId, members, projectData.nombre, projectData.descripcion]
   );
 
   const actions = useMemo(
@@ -91,11 +103,10 @@ export function CreateProjectProvider({
           className: "btn create-project-submit-btn",
           buildPayload,
           onExecute: (payload) => {
-            console.log("Payload DB para crear proyecto:", payload);
             onSubmit?.(payload);
           },
-          successTitle: "Proyecto preparado",
-          successMessage: "El payload del proyecto quedó armado y listo para conectarlo al endpoint real.",
+          successTitle: "Proyecto creado",
+          successMessage: "El proyecto fue enviado al backend usando /api/proyectos.",
           showPayloadOnSuccess: true,
         },
       ],
