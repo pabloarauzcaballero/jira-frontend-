@@ -35,6 +35,20 @@ export function logoutRequest() {
   });
 }
 
+export function refreshSessionRequest() {
+  return requestEndpoint({
+    endpoint: API_ENDPOINTS.auth.refreshSession,
+    method: "POST",
+  });
+}
+
+export function meRequest() {
+  return requestEndpoint({
+    endpoint: API_ENDPOINTS.auth.me,
+    method: "GET",
+  });
+}
+
 export function persistAccessToken(accessToken) {
   if (!accessToken) return;
   window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
@@ -46,10 +60,24 @@ export function clearAccessToken() {
 
 export function normalizeAuthResponse(responseData = {}, fallbackUser = {}) {
   const envelope = responseData?.data ?? responseData;
-  const user = envelope?.user ?? envelope?.usuario ?? envelope?.currentUser ?? envelope ?? fallbackUser;
+  const rawUser =
+    envelope?.user ??
+    envelope?.usuario ??
+    envelope?.currentUser ??
+    envelope?.current_user ??
+    envelope?.me ??
+    null;
+
+  const envelopeLooksLikeUser = Boolean(
+    envelope?.id_usuario || envelope?.id || envelope?.email || envelope?.nombre
+  );
+
+  const fallbackLooksLikeUser = Boolean(
+    fallbackUser?.id_usuario || fallbackUser?.id || fallbackUser?.email || fallbackUser?.nombre
+  );
 
   return {
-    user,
+    user: rawUser ?? (envelopeLooksLikeUser ? envelope : fallbackLooksLikeUser ? fallbackUser : null),
     accessToken:
       envelope?.accessToken ?? envelope?.access_token ?? envelope?.token ?? null,
     refreshToken: envelope?.refreshToken ?? envelope?.refresh_token ?? null,

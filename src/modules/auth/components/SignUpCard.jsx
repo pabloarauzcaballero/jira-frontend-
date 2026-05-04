@@ -9,18 +9,19 @@ export default function SignUpCard({
   icon,
   timezones = [],
   onSignUp,
+  isLoading = false,
 }) {
   return (
     <section className="signup-card">
       <SignUpBrand appName={appName} subtitle={subtitle} icon={icon} />
 
-      <SignUpForm timezones={timezones} onSignUp={onSignUp} />
+      <SignUpForm timezones={timezones} onSignUp={onSignUp} isLoading={isLoading} />
 
       <div className="signup-login-link-wrapper">
         <p className="signup-login-text">
-          Already have an account?{" "}
+          ¿Ya tienes una cuenta?{" "}
           <Link to="/login" className="signup-login-link">
-            Log in
+            Iniciar sesión
           </Link>
         </p>
       </div>

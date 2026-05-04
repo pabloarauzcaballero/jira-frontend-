@@ -1,10 +1,6 @@
 export default function DescriptionEditor({ value, onChange }) {
   return (
     <section>
-      <label className="create-issue-label" htmlFor="descripcion">
-        Descripción
-      </label>
-
       <div className="create-issue-editor">
         <div className="create-issue-editor-toolbar">
           <select className="create-issue-editor-select">
@@ -34,7 +30,8 @@ export default function DescriptionEditor({ value, onChange }) {
           id="descripcion"
           rows="8"
           className="create-issue-editor-area"
-          placeholder="Describe el problema, contexto y resultado esperado..."
+          placeholder="Descripción del problema, contexto y resultado esperado..."
+          aria-label="Descripción del ticket"
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />

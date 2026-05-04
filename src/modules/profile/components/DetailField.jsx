@@ -1,7 +1,7 @@
 export default function DetailField({ label, value }) {
   return (
     <div>
-      <label className="profile-detail-label">{label}</label>
+      <span className="profile-detail-label">{label}</span>
       <p className="profile-detail-value">{value}</p>
     </div>
   );

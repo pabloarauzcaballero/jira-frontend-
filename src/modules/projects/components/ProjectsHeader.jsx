@@ -24,7 +24,7 @@ export default function ProjectsHeader() {
         </div>
 
         <p className="projects-header-description mb-0">
-          Proyectos leídos con el shape de la tabla proyecto: id_proyecto, descripción, estado_registro, auditoría y versión.
+          Administra tus proyectos activos, su estado y el equipo relacionado desde una vista limpia del workspace.
         </p>
 
         <span className="projects-header-counter">{totalProjects} proyectos disponibles</span>

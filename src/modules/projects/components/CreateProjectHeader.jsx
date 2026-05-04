@@ -17,7 +17,7 @@ export default function CreateProjectHeader() {
       <h1 className="create-project-title">Crear proyecto</h1>
 
       <p className="create-project-description">
-        El DDL de proyecto solo exige descripción, estado, auditoría y versión. Los usuarios se vinculan después mediante proyecto_asignacion.
+        Define la información base del proyecto y agrega los miembros que participarán en el equipo.
       </p>
     </header>
   );

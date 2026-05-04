@@ -11,17 +11,14 @@ export default function IssueMetadataFields({
 }) {
   return (
     <section>
-      <h2 className="create-issue-section-title">Datos compatibles con PostgreSQL</h2>
+      <h2 className="create-issue-section-title">Configuración</h2>
 
       <div className="create-issue-grid-2">
         <div>
-          <label className="create-issue-label" htmlFor="status">
-            Status
-          </label>
-
           <select
             id="status"
             className="form-select create-issue-input"
+            aria-label="Estado del ticket"
             value={status}
             onChange={(event) => onChange("status", event.target.value)}
           >
@@ -34,13 +31,10 @@ export default function IssueMetadataFields({
         </div>
 
         <div>
-          <label className="create-issue-label" htmlFor="prioridad">
-            Prioridad
-          </label>
-
           <select
             id="prioridad"
             className="form-select create-issue-input"
+            aria-label="Prioridad del ticket"
             value={prioridad}
             onChange={(event) => onChange("prioridad", event.target.value)}
           >

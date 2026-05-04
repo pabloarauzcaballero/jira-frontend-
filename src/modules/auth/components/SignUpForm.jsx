@@ -3,7 +3,7 @@ import { useState } from "react";
 import PasswordInput from "./PasswordInput";
 import TwoFactorCheckbox from "./TwoFactorCheckbox";
 
-export default function SignUpForm({ timezones = [], onSignUp }) {
+export default function SignUpForm({ timezones = [], onSignUp, isLoading = false }) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -51,62 +51,54 @@ export default function SignUpForm({ timezones = [], onSignUp }) {
   return (
     <form className="signup-form" onSubmit={handleSubmit}>
       <div>
-        <label className="signup-label" htmlFor="fullName">
-          Full Name
-        </label>
-
         <input
           id="fullName"
           type="text"
           className="form-control signup-input"
-          placeholder="John Doe"
+          placeholder="Nombre completo"
+          aria-label="Nombre completo"
           value={formData.fullName}
           onChange={(event) => handleChange("fullName", event.target.value)}
+          disabled={isLoading}
         />
       </div>
 
       <div>
-        <label className="signup-label" htmlFor="email">
-          Email Address
-        </label>
-
         <input
           id="email"
           type="email"
           className="form-control signup-input"
-          placeholder="name@company.com"
+          placeholder="Correo electrónico"
+          aria-label="Correo electrónico"
           value={formData.email}
           onChange={(event) => handleChange("email", event.target.value)}
+          disabled={isLoading}
         />
       </div>
 
       <div>
-        <label className="signup-label" htmlFor="phone">
-          Phone Number
-        </label>
-
         <input
           id="phone"
           name="telefono"
           type="tel"
           className="form-control signup-input"
-          placeholder="+591..."
+          placeholder="Teléfono"
+          aria-label="Teléfono"
           value={formData.phone}
           onChange={(event) => handleChange("phone", event.target.value)}
+          disabled={isLoading}
         />
       </div>
 
       <div>
-        <label className="signup-label" htmlFor="timezone">
-          Timezone
-        </label>
-
         <select
           id="timezone"
           name="timezone"
           className="form-select signup-input"
+          aria-label="Zona horaria"
           value={formData.timezone}
           onChange={(event) => handleChange("timezone", event.target.value)}
+          disabled={isLoading}
         >
           {timezones.map((timezone) => (
             <option key={timezone.value} value={timezone.value}>
@@ -117,46 +109,54 @@ export default function SignUpForm({ timezones = [], onSignUp }) {
       </div>
 
       <div>
-        <label className="signup-label" htmlFor="primaryPosition">
-          Primary Position
-        </label>
-
         <input
           id="primaryPosition"
           name="posicion_principal"
           type="text"
           className="form-control signup-input"
-          placeholder="e.g. Lead Developer"
+          placeholder="Posición principal"
+          aria-label="Posición principal"
           value={formData.primaryPosition}
           onChange={(event) =>
             handleChange("primaryPosition", event.target.value)
           }
+          disabled={isLoading}
         />
       </div>
 
       <PasswordInput
         id="password"
-        label="Password"
+        label="Contraseña"
         value={formData.password}
         onChange={(value) => handleChange("password", value)}
+        isLoading={isLoading}
       />
 
       <PasswordInput
         id="confirmPassword"
-        label="Confirm Password"
+        label="Confirmar contraseña"
         value={formData.confirmPassword}
         onChange={(value) => handleChange("confirmPassword", value)}
+        isLoading={isLoading}
       />
 
       <TwoFactorCheckbox
         checked={formData.isTwoFactors}
         onChange={(value) => handleChange("isTwoFactors", value)}
+        disabled={isLoading}
       />
 
       {error && <p className="signup-error">{error}</p>}
 
-      <button type="submit" className="btn signup-submit-btn">
-        Create account
+      <button type="submit" className="btn signup-submit-btn" disabled={isLoading}>
+        {isLoading ? (
+          <>
+            <span className="button-spinner" aria-hidden="true" />
+            Creando cuenta...
+          </>
+        ) : (
+          "Crear cuenta"
+        )}
       </button>
     </form>
   );

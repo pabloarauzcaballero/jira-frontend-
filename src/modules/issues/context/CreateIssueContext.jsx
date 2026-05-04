@@ -71,7 +71,7 @@ export function CreateIssueProvider({
             onSubmit?.(payload);
           },
           successTitle: "Ticket creado",
-          successMessage: "El ticket fue enviado al backend usando /api/tickets.",
+          successMessage: "El ticket fue guardado correctamente.",
           showPayloadOnSuccess: true,
         },
       ],

@@ -21,6 +21,7 @@ import ProjectMembersPage from "./modules/projects/pages/ProjectMembersPage";
 import ProjectsPage from "./modules/projects/pages/ProjectPage";
 import HamburguerNav from "./shared/components/hamburguerNav";
 import NavBar from "./shared/components/navBar";
+import LoadingState from "./shared/components/loading/LoadingState";
 import { AppActionProvider } from "./shared/context/AppActionContext";
 import { useNotificationContext } from "./shared/context/NotificationContext";
 import { useSessionContext } from "./shared/context/SessionContext";
@@ -41,8 +42,10 @@ import {
   clearAccessToken,
   loginRequest,
   logoutRequest,
+  meRequest,
   normalizeAuthResponse,
   persistAccessToken,
+  refreshSessionRequest,
   signupRequest,
 } from "./shared/services/authService";
 import {
@@ -56,6 +59,7 @@ import {
   listUsuarios,
   removeProyectoMiembro,
   updateProyectoMiembro,
+  updateUsuario,
 } from "./shared/services/jiraApiService";
 
 const APP_NAME = "Mini Issue Tracker";
@@ -95,7 +99,8 @@ function getActiveView(pathname = "") {
   if (pathname.startsWith("/profile")) return "profile";
   if (pathname.startsWith("/board")) return "board";
   if (pathname.startsWith("/login")) return "login";
-  return "signup";
+  if (pathname.startsWith("/signup")) return "signup";
+  return "login";
 }
 
 function getIdProyecto(proyecto = {}) {
@@ -106,33 +111,51 @@ function getIdTicket(ticket = {}) {
   return ticket.id_ticket ?? ticket.id;
 }
 
-function AppLayout({ onNavigate }) {
+function AppLayout({ onNavigate, onLogout, isLoading = false }) {
   const location = useLocation();
   const activeView = getActiveView(location.pathname);
 
   return (
     <>
       <NavBar />
-      <HamburguerNav activeView={activeView} onNavigate={onNavigate} />
+      <HamburguerNav activeView={activeView} onNavigate={onNavigate} onLogout={onLogout} />
       <main className="app-main">
+        {isLoading && (
+          <div className="app-loading-strip">
+            <LoadingState
+              variant="compact"
+              compact
+              title="Sincronizando workspace"
+              message="Cargando usuarios, proyectos, miembros y tickets..."
+            />
+          </div>
+        )}
         <Outlet />
       </main>
     </>
   );
 }
 
-function ProtectedRoute() {
+function ProtectedRoute({ isCheckingSession = false }) {
   const { auth } = useSessionContext();
 
+  if (isCheckingSession) {
+    return <LoadingState title="Verificando sesión" message="Validando la sesión activa..." />;
+  }
+
   if (!auth.isAuthenticated) {
-    return <Navigate to="/signup" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
 }
 
-function PublicOnlyRoute() {
+function PublicOnlyRoute({ isCheckingSession = false }) {
   const { auth } = useSessionContext();
+
+  if (isCheckingSession) {
+    return <LoadingState title="Verificando sesión" message="Validando la sesión activa..." />;
+  }
 
   if (auth.isAuthenticated) {
     return <Navigate to="/board" replace />;
@@ -141,7 +164,7 @@ function PublicOnlyRoute() {
   return <Outlet />;
 }
 
-function IssueDetailRoute({ tickets = [], currentUser, activities = [] }) {
+function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorkspaceLoading = false }) {
   const { idTicket } = useParams();
   const [remoteTicket, setRemoteTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -184,7 +207,14 @@ function IssueDetailRoute({ tickets = [], currentUser, activities = [] }) {
     return toIssueDetail(localTicket ?? remoteTicket, currentUser);
   }, [currentUser, isLoading, localTicket, remoteTicket]);
 
-  return <IssueDetailPage issue={issue} currentUser={currentUser} activities={activities} />;
+  return (
+    <IssueDetailPage
+      issue={issue}
+      currentUser={currentUser}
+      activities={activities}
+      isLoading={isLoading || isWorkspaceLoading}
+    />
+  );
 }
 
 function AppRoutes() {
@@ -196,6 +226,7 @@ function AppRoutes() {
     setAuthSession,
     setActiveProject,
     setActiveTicket,
+    updateCurrentUser,
     logout,
   } = useSessionContext();
   const { showError, showSuccess, showWarning } = useNotificationContext();
@@ -205,9 +236,49 @@ function AppRoutes() {
   const [miembrosByProyecto, setMiembrosByProyecto] = useState({});
   const [tickets, setTickets] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function validateStoredSession() {
+      try {
+        const sessionResult = await refreshSessionRequest().catch(() => meRequest());
+        let normalizedSession = normalizeAuthResponse(sessionResult.data);
+
+        if (!normalizedSession.user) {
+          const meResult = await meRequest();
+          normalizedSession = normalizeAuthResponse(meResult.data);
+        }
+
+        if (!normalizedSession.user) {
+          throw new Error("No active session user was returned.");
+        }
+
+        if (isMounted) {
+          persistAccessToken(normalizedSession.accessToken);
+          setAuthSession(normalizedSession);
+        }
+      } catch (_error) {
+        clearAccessToken();
+        logout();
+      } finally {
+        if (isMounted) setIsCheckingSession(false);
+      }
+    }
+
+    validateStoredSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [logout, setAuthSession]);
 
   const reloadWorkspace = useCallback(async () => {
-    if (!auth.isAuthenticated) return;
+    if (isCheckingSession || !auth.isAuthenticated) return;
 
     try {
       setIsSyncing(true);
@@ -251,12 +322,13 @@ function AppRoutes() {
         message:
           error?.response?.data?.message ||
           error.message ||
-          "No se pudieron cargar todos los datos del backend.",
+          "No se pudieron cargar todos los datos del workspace.",
       });
     } finally {
+      setHasLoadedWorkspace(true);
       setIsSyncing(false);
     }
-  }, [active.id_proyecto, auth.isAuthenticated, setActiveProject, showWarning]);
+  }, [active.id_proyecto, auth.isAuthenticated, isCheckingSession, setActiveProject, showWarning]);
 
   useEffect(() => {
     reloadWorkspace();
@@ -319,8 +391,9 @@ function AppRoutes() {
       issue: toIssueDetail(tickets[0], currentUser),
       activities: [],
       isSyncing,
+      isLoading: isSyncing && !hasLoadedWorkspace,
     };
-  }, [activeProjectMembers, currentMember, currentUser, isSyncing, miembrosByProyecto, projectOptions, proyectos, tickets, userOptions]);
+  }, [activeProjectMembers, currentMember, currentUser, hasLoadedWorkspace, isSyncing, miembrosByProyecto, projectOptions, proyectos, tickets, userOptions]);
 
   const navigateByView = useCallback(
     (viewKey) => {
@@ -336,27 +409,35 @@ function AppRoutes() {
   const handleLogin = useCallback(
     async (payload) => {
       try {
+        setAuthLoading(true);
         const result = await loginRequest(payload);
-        const normalized = normalizeAuthResponse(result.data, {
+        let normalized = normalizeAuthResponse(result.data, {
           email: payload.email,
           nombre: payload.email,
           timezone: "America/La_Paz",
         });
+
+        const meResult = await meRequest().catch(() => null);
+        if (meResult?.data) {
+          normalized = normalizeAuthResponse(meResult.data, normalized.user);
+        }
 
         persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
 
         showSuccess({
           title: "Sesión iniciada",
-          message: "El backend respondió correctamente y la sesión fue sincronizada.",
+          message: "Tu sesión fue iniciada correctamente.",
         });
 
         navigate("/board");
       } catch (error) {
         showError({
           title: "No se pudo iniciar sesión",
-          message: error?.response?.data?.message || error.message || "Revisa el endpoint de login.",
+          message: error?.response?.data?.message || error.message || "Verifica tus credenciales e inténtalo nuevamente.",
         });
+      } finally {
+        setAuthLoading(false);
       }
     },
     [navigate, setAuthSession, showError, showSuccess]
@@ -365,6 +446,7 @@ function AppRoutes() {
   const handleSignUp = useCallback(
     async (payload) => {
       try {
+        setAuthLoading(true);
         await signupRequest(payload);
 
         const loginResult = await loginRequest({
@@ -372,21 +454,28 @@ function AppRoutes() {
           password: payload.password,
         });
 
-        const normalized = normalizeAuthResponse(loginResult.data, payload);
+        let normalized = normalizeAuthResponse(loginResult.data, payload);
+        const meResult = await meRequest().catch(() => null);
+        if (meResult?.data) {
+          normalized = normalizeAuthResponse(meResult.data, normalized.user);
+        }
+
         persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
 
         showSuccess({
           title: "Cuenta creada",
-          message: "El usuario fue creado y luego autenticado para obtener la cookie JWT.",
+          message: "Tu cuenta fue creada y la sesión quedó activa.",
         });
 
         navigate("/board");
       } catch (error) {
         showError({
           title: "No se pudo registrar la cuenta",
-          message: error?.response?.data?.message || error.message || "Revisa el endpoint de signup.",
+          message: error?.response?.data?.message || error.message || "Verifica los datos ingresados e inténtalo nuevamente.",
         });
+      } finally {
+        setAuthLoading(false);
       }
     },
     [navigate, setAuthSession, showError, showSuccess]
@@ -398,7 +487,7 @@ function AppRoutes() {
         if (!payload.nombre || !payload.descripcion) {
           showError({
             title: "Datos incompletos",
-            message: "El backend requiere nombre y descripción para crear un proyecto.",
+            message: "Completa el nombre y la descripción antes de crear el proyecto.",
           });
           return;
         }
@@ -425,7 +514,7 @@ function AppRoutes() {
 
         showSuccess({
           title: "Proyecto creado",
-          message: "El proyecto fue guardado en /api/proyectos y los miembros se intentaron vincular.",
+          message: "El proyecto fue guardado correctamente y se actualizaron sus miembros.",
         });
 
         navigate("/projects");
@@ -445,7 +534,7 @@ function AppRoutes() {
         if (!payload.nombre || !payload.id_proyecto || !payload.id_usuario) {
           showError({
             title: "Datos incompletos",
-            message: "El backend requiere nombre, id_proyecto e id_usuario para crear el ticket.",
+            message: "Completa el nombre, proyecto y usuario asignado antes de crear el ticket.",
           });
           return;
         }
@@ -457,7 +546,7 @@ function AppRoutes() {
 
         showSuccess({
           title: "Ticket creado",
-          message: "El ticket fue guardado en /api/tickets junto con su asignación inicial.",
+          message: "El ticket fue guardado correctamente.",
         });
 
         if (newTicketId) {
@@ -536,6 +625,55 @@ function AppRoutes() {
     [activeProjectId, reloadWorkspace, showError, showSuccess]
   );
 
+  const handleUpdateProfile = useCallback(
+    async (payload) => {
+      const idUsuario = currentUser?.id_usuario ?? currentUser?.id;
+
+      if (!idUsuario) {
+        showError({
+          title: "No se pudo editar el perfil",
+          message: "La sesión actual no tiene un id_usuario válido. Revisa que /api/auth/me devuelva el usuario autenticado.",
+        });
+        return;
+      }
+
+      try {
+        setIsSavingProfile(true);
+        const updatedUser = await updateUsuario(idUsuario, payload);
+        updateCurrentUser(updatedUser ?? payload);
+
+        setUsuarios((currentUsers) =>
+          currentUsers.map((usuario) =>
+            Number(usuario.id_usuario ?? usuario.id) === Number(idUsuario)
+              ? { ...usuario, ...(updatedUser ?? payload) }
+              : usuario
+          )
+        );
+
+        showSuccess({
+          title: "Perfil actualizado",
+          message: "Los datos del usuario fueron guardados correctamente.",
+        });
+      } catch (error) {
+        showError({
+          title: "No se pudo editar el perfil",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de usuarios.",
+        });
+        throw error;
+      } finally {
+        setIsSavingProfile(false);
+      }
+    },
+    [currentUser?.id, currentUser?.id_usuario, showError, showSuccess, updateCurrentUser]
+  );
+
+  const handlePasswordPending = useCallback(() => {
+    showWarning({
+      title: "Endpoint pendiente",
+      message: "El cambio de contraseña necesita un endpoint específico en el backend. No reutilicé editar usuario para no tocar password_hash por accidente.",
+    });
+  }, [showWarning]);
+
   const handleLogout = useCallback(async () => {
     try {
       await logoutRequest();
@@ -551,18 +689,19 @@ function AppRoutes() {
   return (
     <AppActionProvider onNavigate={navigateByView}>
       <Routes>
-        <Route element={<PublicOnlyRoute />}>
-          <Route index element={<Navigate to="/signup" replace />} />
+        <Route element={<PublicOnlyRoute isCheckingSession={isCheckingSession} />}>
+          <Route index element={<Navigate to="/login" replace />} />
           <Route
             path="/signup"
             element={
               <SignUpPage
                 appName={APP_NAME}
-                subtitle="Crea tu cuenta y conecta el frontend con tu backend."
+                subtitle="Crea tu cuenta y empieza a gestionar tu workspace."
                 icon="bug_report"
                 timezones={timezones}
                 footerLinks={footerLinks}
                 onSignUp={handleSignUp}
+                isLoading={authLoading}
               />
             }
           />
@@ -578,13 +717,14 @@ function AppRoutes() {
                   { label: "Recuperar contraseña", href: "#" },
                 ]}
                 onLogin={handleLogin}
+                isLoading={authLoading}
               />
             }
           />
         </Route>
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout onNavigate={navigateByView} onLogout={handleLogout} />}>
+        <Route element={<ProtectedRoute isCheckingSession={isCheckingSession} />}>
+          <Route element={<AppLayout onNavigate={navigateByView} onLogout={handleLogout} isLoading={isSyncing} />}>
             <Route path="/board" element={<BoardComponent {...routeData} />} />
             <Route
               path="/projects"
@@ -592,6 +732,7 @@ function AppRoutes() {
                 <ProjectsPage
                   currentProjects={routeData.projects}
                   recentProjects={routeData.recentProjects}
+                  isLoading={routeData.isLoading}
                 />
               }
             />
@@ -603,6 +744,7 @@ function AppRoutes() {
                   initialMembers={routeData.members}
                   onSubmit={handleCreateProject}
                   onCancel={() => navigate("/projects")}
+                  isLoading={routeData.isLoading}
                 />
               }
             />
@@ -613,13 +755,14 @@ function AppRoutes() {
                   projectName={activeProject?.nombre ?? "Proyecto pendiente"}
                   projectDescription={
                     activeProject?.descripcion ??
-                    "Crea o selecciona un proyecto para ver miembros reales desde /api/proyectos/:id/miembros."
+                    "Selecciona un proyecto para revisar y administrar sus miembros."
                   }
                   members={routeData.members}
                   users={routeData.users}
                   onAddMember={handleAddMember}
                   onUpdateMember={handleUpdateMember}
                   onUnlinkMember={handleUnlinkMember}
+                  isLoading={routeData.isLoading}
                 />
               }
             />
@@ -633,6 +776,7 @@ function AppRoutes() {
                   statuses={routeData.statuses}
                   onSubmit={handleCreateTicket}
                   onCancel={() => navigate("/board")}
+                  isLoading={routeData.isLoading}
                 />
               }
             />
@@ -643,13 +787,26 @@ function AppRoutes() {
                   tickets={tickets}
                   currentUser={currentUser}
                   activities={routeData.activities}
+                  isWorkspaceLoading={routeData.isLoading}
                 />
               }
             />
-            <Route path="/profile" element={<UserProfilePage {...routeData.profileData} />} />
+            <Route
+              path="/profile"
+              element={
+                <UserProfilePage
+                  {...routeData.profileData}
+                  timezones={timezones}
+                  isLoading={routeData.isLoading}
+                  isSavingProfile={isSavingProfile}
+                  onSubmitProfile={handleUpdateProfile}
+                  onShowPasswordPending={handlePasswordPending}
+                />
+              }
+            />
             <Route
               path="*"
-              element={<Navigate to={auth.isAuthenticated ? "/board" : "/signup"} replace />}
+              element={<Navigate to={auth.isAuthenticated ? "/board" : "/login"} replace />}
             />
           </Route>
         </Route>

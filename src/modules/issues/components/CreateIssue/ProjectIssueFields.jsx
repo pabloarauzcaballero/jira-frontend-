@@ -8,18 +8,15 @@ export default function ProjectIssueFields({
   return (
     <section className="create-issue-grid-2">
       <div>
-        <label className="create-issue-label" htmlFor="id_proyecto">
-          Proyecto <span className="text-danger">*</span>
-        </label>
-
         <select
           id="id_proyecto"
           className="form-select create-issue-input"
+          aria-label="Proyecto"
           value={idProyecto}
           onChange={(event) => onChange("id_proyecto", event.target.value)}
         >
           {projects.length === 0 ? (
-            <option value="">Conecta API_ENDPOINTS.proyectos.list</option>
+            <option value="">Sin proyectos disponibles</option>
           ) : (
             projects.map((currentProject) => (
               <option key={currentProject.value} value={currentProject.value}>
@@ -31,18 +28,15 @@ export default function ProjectIssueFields({
       </div>
 
       <div>
-        <label className="create-issue-label" htmlFor="id_usuario">
-          Usuario asignado <span className="text-danger">*</span>
-        </label>
-
         <select
           id="id_usuario"
           className="form-select create-issue-input"
+          aria-label="Usuario asignado"
           value={idUsuario}
           onChange={(event) => onChange("id_usuario", event.target.value)}
         >
           {users.length === 0 ? (
-            <option value="">Conecta API_ENDPOINTS.usuarios.list</option>
+            <option value="">Sin usuarios disponibles</option>
           ) : (
             users.map((user) => (
               <option key={user.value} value={user.value}>

@@ -32,7 +32,7 @@ function buildMemberFromUserOption(idUsuario, userOptions = []) {
   return toMember(option.raw ?? {
     id_usuario: Number(option.value),
     nombre: option.label,
-    posicion_principal: "Pendiente de backend",
+    posicion_principal: "Pendiente",
   });
 }
 
@@ -190,7 +190,7 @@ export function ProjectMembersProvider({
       const newTicket = {
         id: newTicketId,
         nombre: `TCK-${String(newTicketId).slice(-4)}`,
-        descripcion: "Request pendiente de persistir con el endpoint real.",
+        descripcion: "Solicitud pendiente de guardar.",
         status: "PENDIENTE",
         prioridad: "MEDIA",
         url: "#",
@@ -239,7 +239,7 @@ export function ProjectMembersProvider({
           }),
           onExecute: findMember,
           pendingMessage:
-            "El flujo de búsqueda del front ya está listo. Reemplaza TODO_ENDPOINT por tu endpoint de usuarios para buscar contra backend.",
+            "La búsqueda está lista. Se ejecutará con los filtros del miembro seleccionado.",
         },
       ],
       addForm: [
@@ -256,7 +256,7 @@ export function ProjectMembersProvider({
           }),
           onExecute: addMember,
           pendingMessage:
-            "El formulario está preparado. Conecta este botón con el endpoint de proyecto_asignacion.create cuando tengas la ruta real.",
+            "Se añadirá el usuario seleccionado al proyecto actual.",
         },
       ],
       editForm: [
@@ -274,7 +274,7 @@ export function ProjectMembersProvider({
           }),
           onExecute: saveMemberChanges,
           pendingMessage:
-            "La edición del formulario está lista. Conecta este botón con tu endpoint real para actualizar usuarios/proyecto_asignacion.",
+            "Se guardarán los cambios visibles del miembro.",
         },
         {
           id: "project.members.cancelMemberEdit",
@@ -301,7 +301,7 @@ export function ProjectMembersProvider({
           confirm: {
             title: "Desvincular usuario",
             message:
-              "Esta acción está lista para conectarse contra proyecto_asignacion cuando definas el endpoint.",
+              "Esta acción desvinculará al usuario del proyecto actual.",
             confirmLabel: "Desvincular",
             confirmClassName: "btn btn-danger",
           },

@@ -1,4 +1,4 @@
-export default function TwoFactorCheckbox({ checked, onChange }) {
+export default function TwoFactorCheckbox({ checked, onChange, disabled = false }) {
   return (
     <div className="signup-2fa-row">
       <input
@@ -8,10 +8,11 @@ export default function TwoFactorCheckbox({ checked, onChange }) {
         className="form-check-input"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
+        disabled={disabled}
       />
 
       <label className="signup-2fa-label" htmlFor="twoFactorAuth">
-        Enable Two-Factor Authentication
+        Activar autenticación en dos pasos
       </label>
     </div>
   );

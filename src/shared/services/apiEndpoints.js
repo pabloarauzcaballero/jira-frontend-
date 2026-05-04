@@ -11,8 +11,8 @@ export const API_ENDPOINTS = {
     login: "/api/auth/login",
     signup: "/api/auth/signup",
     logout: "/api/auth/logout",
-    refreshSession: TODO_ENDPOINT,
-    me: TODO_ENDPOINT,
+    refreshSession: "/api/auth/refreshSession",
+    me: "/api/auth/me",
   },
   usuarios: {
     list: "/api/usuarios",

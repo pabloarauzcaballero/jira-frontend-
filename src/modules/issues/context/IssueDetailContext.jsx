@@ -45,7 +45,7 @@ export function IssueDetailProvider({
           className: "btn btn-sm btn-light border text-danger d-flex align-items-center justify-content-center",
           confirm: {
             title: "Eliminar ticket",
-            message: "Esta acción está preparada para eliminar el ticket cuando conectes el endpoint real.",
+            message: "Esta acción eliminará el ticket seleccionado cuando confirmes la operación.",
             confirmLabel: "Eliminar",
             confirmClassName: "btn btn-danger",
           },

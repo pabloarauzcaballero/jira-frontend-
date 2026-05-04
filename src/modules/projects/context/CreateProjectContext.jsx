@@ -15,7 +15,7 @@ function buildMemberFromOption(idUsuario, users = []) {
   return toMember(selectedOption.raw ?? {
     id_usuario: Number(selectedOption.value),
     nombre: selectedOption.label,
-    posicion_principal: "Pendiente de backend",
+    posicion_principal: "Pendiente",
   });
 }
 
@@ -106,7 +106,7 @@ export function CreateProjectProvider({
             onSubmit?.(payload);
           },
           successTitle: "Proyecto creado",
-          successMessage: "El proyecto fue enviado al backend usando /api/proyectos.",
+          successMessage: "El proyecto fue guardado correctamente.",
           showPayloadOnSuccess: true,
         },
       ],

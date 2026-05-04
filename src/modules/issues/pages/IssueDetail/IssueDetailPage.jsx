@@ -6,6 +6,7 @@ import ActivityCard from "../../components/IssueDetail/ActivityCard";
 import StatusAssigneeCard from "../../components/IssueDetail/StatusAssigneeCard";
 import DetailsCard from "../../components/IssueDetail/DetailsCard";
 import { IssueDetailProvider, useIssueDetailContext } from "../../context/IssueDetailContext";
+import LoadingState from "../../../../shared/components/loading/LoadingState";
 
 function IssueDetailContent() {
   const { issue, currentUser, activities } = useIssueDetailContext();
@@ -32,6 +33,10 @@ function IssueDetailContent() {
 }
 
 export default function IssueDetailPage(props) {
+  if (props.isLoading) {
+    return <LoadingState title="Cargando ticket" message="Obteniendo el detalle y las actualizaciones del ticket..." />;
+  }
+
   return (
     <IssueDetailProvider {...props}>
       <IssueDetailContent />

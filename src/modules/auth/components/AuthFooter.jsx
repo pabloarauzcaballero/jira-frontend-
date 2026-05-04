@@ -2,7 +2,7 @@ export default function AuthFooter({ links = [] }) {
   return (
     <footer className="auth-footer">
       <div className="auth-footer-inner">
-        <span>© 2024 IssueTracker Inc. All rights reserved.</span>
+        <span>© 2026 IssueTracker. Todos los derechos reservados.</span>
 
         <div className="auth-footer-links">
           {links.map((link) => (

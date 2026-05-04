@@ -8,6 +8,7 @@ export default function LoginPage({
   icon = "bug_report",
   links = [],
   onLogin,
+  isLoading = false,
 }) {
   return (
     <main className="login-page">
@@ -17,6 +18,7 @@ export default function LoginPage({
         icon={icon}
         links={links}
         onLogin={onLogin}
+        isLoading={isLoading}
       />
     </main>
   );

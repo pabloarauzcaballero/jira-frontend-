@@ -141,22 +141,39 @@ export function buildEmptyTicketsByStatus(statuses = ticketStatusOptions) {
 
 export function buildProfileDataFromUser(usuario = null) {
   const currentUser = usuario ?? {};
-  const nombre = currentUser.nombre ?? currentUser.name ?? "Usuario";
+  const idUsuario = currentUser.id_usuario ?? currentUser.id ?? null;
+  const nombre = currentUser.nombre ?? currentUser.name ?? currentUser.email ?? "Usuario";
   const posicion = currentUser.posicion_principal ?? currentUser.position ?? "Sin posición asignada";
+  const twoFactorEnabled = Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false);
 
   return {
+    rawUser: {
+      id_usuario: idUsuario,
+      nombre,
+      email: currentUser.email ?? "",
+      telefono: currentUser.telefono ?? currentUser.phone ?? "",
+      timezone: currentUser.timezone ?? "America/La_Paz",
+      posicion_principal: posicion,
+      is_two_factors: twoFactorEnabled,
+      avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
+      tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
+    },
     user: {
+      id_usuario: idUsuario,
       name: nombre,
+      nombre,
+      email: currentUser.email ?? "",
       position: posicion,
+      posicion_principal: posicion,
       avatarUrl: currentUser.avatarUrl ?? currentUser.urlProfile ?? null,
       initials: initialsFromName(nombre),
       tags: Array.isArray(currentUser.tags) ? currentUser.tags : [],
     },
     security: {
-      twoFactorEnabled: Boolean(currentUser.is_two_factors ?? currentUser.isTwoFactors ?? false),
-      twoFactorLabel: currentUser.is_two_factors
+      twoFactorEnabled,
+      twoFactorLabel: twoFactorEnabled
         ? "Activo según la sesión actual"
-        : "Pendiente de activar o sincronizar con backend",
+        : "Pendiente de activar",
       actions: ["Cambiar contraseña", "Revisar estado de cuenta"],
     },
     accountDetails: {
@@ -164,7 +181,7 @@ export function buildProfileDataFromUser(usuario = null) {
       phone: currentUser.telefono ?? currentUser.phone ?? "Sin teléfono",
       timezone: currentUser.timezone ?? "America/La_Paz",
       manager: {
-        name: "Pendiente de backend",
+        name: "Pendiente",
         initials: "PB",
       },
     },
@@ -186,7 +203,7 @@ export function buildEmptyIssueDetail(currentUser = null) {
     statusValue: "PENDIENTE",
     priority: formatDbLabel("MEDIA"),
     priorityValue: "MEDIA",
-    createdAt: "Creado: pendiente de backend",
+    createdAt: "Creado: pendiente",
     createdDate: "Pendiente",
     updatedAt: "Pendiente",
     estado_registro: "ACTIVO",
@@ -203,7 +220,7 @@ export function buildEmptyIssueDetail(currentUser = null) {
     },
     description: {
       paragraphs: [
-        "Conecta API_ENDPOINTS.tickets.detail para cargar el detalle real del ticket desde tu backend.",
+        "Selecciona un ticket para visualizar su descripción, acciones y criterios de aceptación.",
       ],
       points: [],
       acceptanceCriteria: [],

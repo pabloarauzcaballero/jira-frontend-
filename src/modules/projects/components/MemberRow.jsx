@@ -34,45 +34,48 @@ export default function MemberRow({ member }) {
               <MemberAvatar nombre={nombre} urlProfile={urlProfile} />
               <div>
                 <div className="fw-semibold">Modificar miembro</div>
-                <small className="text-secondary">Edita los campos visibles del usuario antes de conectar el endpoint real.</small>
+                <small className="text-secondary">Actualiza la información visible del miembro y guarda los cambios.</small>
               </div>
             </div>
 
             <div className="row g-2 align-items-end">
               <div className="col-12 col-md-3">
-                <label className="form-label small fw-semibold text-secondary">Nombre</label>
                 <input
                   type="text"
                   className="form-control form-control-sm"
+                  placeholder="Nombre"
+                  aria-label="Nombre"
                   value={memberDraft.nombre ?? ""}
                   onChange={(event) => updateMemberDraftField("nombre", event.target.value)}
                 />
               </div>
 
               <div className="col-12 col-md-3">
-                <label className="form-label small fw-semibold text-secondary">Email</label>
                 <input
                   type="email"
                   className="form-control form-control-sm"
+                  placeholder="Email"
+                  aria-label="Email"
                   value={memberDraft.email ?? ""}
                   onChange={(event) => updateMemberDraftField("email", event.target.value)}
                 />
               </div>
 
               <div className="col-12 col-md-3">
-                <label className="form-label small fw-semibold text-secondary">Posición principal</label>
                 <input
                   type="text"
                   className="form-control form-control-sm"
+                  placeholder="Posición principal"
+                  aria-label="Posición principal"
                   value={memberDraft.posicion_principal ?? ""}
                   onChange={(event) => updateMemberDraftField("posicion_principal", event.target.value)}
                 />
               </div>
 
               <div className="col-12 col-md-3">
-                <label className="form-label small fw-semibold text-secondary">Estado</label>
                 <select
                   className="form-select form-select-sm"
+                  aria-label="Estado del miembro"
                   value={memberDraft.estado_registro ?? "ACTIVO"}
                   onChange={(event) => updateMemberDraftField("estado_registro", event.target.value)}
                 >

@@ -1,7 +1,11 @@
+import ButtonActionGroup from "../../../shared/components/actions/ButtonActionGroup";
+import { useProfileContext } from "../context/ProfileContext";
 import DetailField from "./DetailField";
 import ManagerInfo from "./ManagerInfo";
 
 export default function AccountDetailsCard({ details }) {
+  const { actions, profileData } = useProfileContext();
+
   return (
     <article className="profile-card profile-details-card">
       <div className="profile-card-header">
@@ -10,10 +14,11 @@ export default function AccountDetailsCard({ details }) {
           Account Details
         </h3>
 
-        <button className="btn btn-sm btn-light border d-flex align-items-center gap-1">
-          <span className="material-symbols-outlined">edit</span>
-          Edit
-        </button>
+        <ButtonActionGroup
+          actions={actions.details}
+          contextPayload={profileData.rawUser}
+          className="d-flex"
+        />
       </div>
 
       <div className="row gy-4">

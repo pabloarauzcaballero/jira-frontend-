@@ -8,12 +8,13 @@ export default function LoginCard({
   icon,
   links = [],
   onLogin,
+  isLoading = false,
 }) {
   return (
     <section className="login-card">
       <LoginBrand appName={appName} subtitle={subtitle} icon={icon} />
 
-      <LoginForm onLogin={onLogin} />
+      <LoginForm onLogin={onLogin} isLoading={isLoading} />
 
       <LoginLinks links={links} />
     </section>

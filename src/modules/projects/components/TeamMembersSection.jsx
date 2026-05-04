@@ -13,7 +13,7 @@ export default function TeamMembersSection({
         <h2 className="create-project-section-title mb-1">Usuarios relacionados</h2>
 
         <p className="create-project-section-description">
-          Usuarios disponibles desde la sesión o desde el endpoint de usuarios. La asignación persistente requiere id_ticket, id_proyecto e id_usuario en proyecto_asignacion.
+          Selecciona los usuarios que formarán parte del proyecto. Puedes quitar miembros antes de guardar.
         </p>
       </div>
 

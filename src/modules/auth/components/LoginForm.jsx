@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function LoginForm({ onLogin }) {
+export default function LoginForm({ onLogin, isLoading = false }) {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,10 +27,6 @@ export default function LoginForm({ onLogin }) {
   return (
     <form className="login-form" onSubmit={handleSubmit}>
       <div>
-        <label className="login-label" htmlFor="email">
-          Email address
-        </label>
-
         <input
           id="email"
           name="email"
@@ -38,17 +34,15 @@ export default function LoginForm({ onLogin }) {
           autoComplete="email"
           required
           className="form-control login-input"
-          placeholder="Enter your email"
+          placeholder="Correo electrónico"
+          aria-label="Correo electrónico"
           value={formData.email}
           onChange={(event) => handleChange("email", event.target.value)}
+          disabled={isLoading}
         />
       </div>
 
       <div>
-        <label className="login-label" htmlFor="password">
-          Password
-        </label>
-
         <input
           id="password"
           name="password"
@@ -56,14 +50,23 @@ export default function LoginForm({ onLogin }) {
           autoComplete="current-password"
           required
           className="form-control login-input"
-          placeholder="Enter your password"
+          placeholder="Contraseña"
+          aria-label="Contraseña"
           value={formData.password}
           onChange={(event) => handleChange("password", event.target.value)}
+          disabled={isLoading}
         />
       </div>
 
-      <button type="submit" className="btn login-submit-btn">
-        Log in
+      <button type="submit" className="btn login-submit-btn" disabled={isLoading}>
+        {isLoading ? (
+          <>
+            <span className="button-spinner" aria-hidden="true" />
+            Iniciando sesión...
+          </>
+        ) : (
+          "Iniciar sesión"
+        )}
       </button>
     </form>
   );

@@ -10,6 +10,7 @@ export default function SignUpPage({
   timezones = [],
   footerLinks = [],
   onSignUp,
+  isLoading = false,
 }) {
   return (
     <div className="signup-layout">
@@ -20,6 +21,7 @@ export default function SignUpPage({
           icon={icon}
           timezones={timezones}
           onSignUp={onSignUp}
+          isLoading={isLoading}
         />
       </main>
 

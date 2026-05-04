@@ -36,7 +36,7 @@ export function AppActionProvider({ children, onNavigate }) {
               title: action.pendingTitle || "Endpoint pendiente",
               message:
                 action.pendingMessage ||
-                "La acción ya está preparada en el front. Solo falta reemplazar TODO_ENDPOINT por tu ruta real del backend.",
+                "La acción está preparada, pero todavía no tiene una ruta configurada.",
               details: {
                 actionId: action.id,
                 endpoint: action.endpoint || TODO_ENDPOINT,

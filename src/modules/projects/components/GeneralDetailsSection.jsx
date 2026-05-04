@@ -8,30 +8,24 @@ export default function GeneralDetailsSection({
       <h2 className="create-project-section-title">Datos del proyecto</h2>
 
       <div className="mb-3">
-        <label className="form-label create-project-label" htmlFor="nombre">
-          Nombre <span className="text-danger">*</span>
-        </label>
-
         <input
           id="nombre"
           type="text"
           className="form-control create-project-input"
-          placeholder="Ej. Plataforma interna de tickets"
+          placeholder="Nombre del proyecto *"
+          aria-label="Nombre del proyecto"
           value={projectData.nombre}
           onChange={(event) => onProjectChange("nombre", event.target.value)}
         />
       </div>
 
       <div className="mb-3">
-        <label className="form-label create-project-label" htmlFor="descripcion">
-          Descripción <span className="text-danger">*</span>
-        </label>
-
         <textarea
           id="descripcion"
           rows="4"
           className="form-control create-project-input"
-          placeholder="Describe el objetivo del proyecto..."
+          placeholder="Descripción del proyecto *"
+          aria-label="Descripción del proyecto"
           value={projectData.descripcion}
           onChange={(event) =>
             onProjectChange("descripcion", event.target.value)
@@ -40,13 +34,10 @@ export default function GeneralDetailsSection({
       </div>
 
       <div>
-        <label className="form-label create-project-label" htmlFor="estado_registro">
-          Estado de registro
-        </label>
-
         <select
           id="estado_registro"
           className="form-select create-project-input"
+          aria-label="Estado de registro"
           value={projectData.estado_registro}
           onChange={(event) =>
             onProjectChange("estado_registro", event.target.value)

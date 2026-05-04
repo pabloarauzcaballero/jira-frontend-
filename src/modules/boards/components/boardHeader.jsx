@@ -19,7 +19,7 @@ export default function BoardHeader() {
         <div>
           <h1 className="h4 fw-bold mb-1">Mis Tickets</h1>
           <p className="text-secondary mb-0 small">
-            Columnas generadas desde el CHECK de ticket.status. Total: {totalTickets} tickets.
+            Vista organizada por estado. Total: {totalTickets} tickets.
           </p>
         </div>
 

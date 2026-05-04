@@ -28,10 +28,6 @@ export default function TagsInput({
 
   return (
     <div className="mt-3">
-      <label className="create-issue-label" htmlFor={inputId}>
-        {label}
-      </label>
-
       <div className="create-issue-tags-box">
         {tags.map((tag) => (
           <span key={tag} className="create-issue-tag">
@@ -47,6 +43,7 @@ export default function TagsInput({
           id={inputId}
           type="text"
           placeholder={placeholder}
+          aria-label={label}
           value={currentTag}
           onChange={(event) => setCurrentTag(event.target.value)}
           onKeyDown={handleAddTag}
