@@ -216,6 +216,17 @@ export async function createTicket(payload) {
   return extractData(result);
 }
 
+export async function updateTicket(idTicket, payload) {
+  const result = await requestEndpoint({
+    endpoint: API_ENDPOINTS.tickets.update,
+    endpointParams: [idTicket],
+    method: "PUT",
+    data: payload,
+  });
+
+  return extractData(result);
+}
+
 export async function changeTicketStatus(idTicket, status) {
   const result = await requestEndpoint({
     endpoint: API_ENDPOINTS.tickets.changeStatus,

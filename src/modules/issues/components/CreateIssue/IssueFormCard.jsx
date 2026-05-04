@@ -5,7 +5,7 @@ import IssueMetadataFields from "./IssueMetadataFields";
 import { useCreateIssueContext } from "../../context/CreateIssueContext";
 
 export default function IssueFormCard() {
-  const { formData, projects, selectedProjectUsers, priorities, statuses, handleChange } = useCreateIssueContext();
+  const { formData, projects, users, priorities, statuses, handleChange } = useCreateIssueContext();
 
   return (
     <article className="create-issue-card">
@@ -13,7 +13,7 @@ export default function IssueFormCard() {
         idProyecto={formData.id_proyecto}
         idUsuario={formData.id_usuario}
         projects={projects}
-        users={selectedProjectUsers}
+        users={users}
         onChange={handleChange}
       />
 

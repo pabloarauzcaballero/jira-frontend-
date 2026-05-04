@@ -1,6 +1,10 @@
+import { useNavigate } from "react-router-dom";
+
 import { formatDbLabel } from "../../../shared/data/databaseOptions.js";
 
 export default function BoardCard({ issue, status }) {
+  const navigate = useNavigate();
+
   if (!issue) {
     return null;
   }
@@ -25,8 +29,25 @@ export default function BoardCard({ issue, status }) {
     low: "drag_handle",
   };
 
+  function handleOpenTicket() {
+    const idTicket = issue.id_ticket ?? issue.id;
+    if (!idTicket) return;
+    navigate(`/issues/${idTicket}`);
+  }
+
   return (
-    <article className={`issue-card ${status === "EN_PROGRESO" ? "in-progress" : ""}`}>
+    <article
+      className={`issue-card ${status === "EN_PROGRESO" ? "in-progress" : ""}`}
+      role="button"
+      tabIndex={0}
+      onClick={handleOpenTicket}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenTicket();
+        }
+      }}
+    >
       <div>
         <p className="issue-title">{issue.title}</p>
 

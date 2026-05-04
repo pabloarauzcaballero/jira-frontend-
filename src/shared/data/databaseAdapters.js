@@ -58,16 +58,14 @@ export function toProjectOption(proyecto = {}) {
 export function toMember(usuario = {}, extra = {}) {
   const idUsuario = usuario.id_usuario ?? usuario.id;
   const nombre = usuario.nombre ?? usuario.name ?? usuario.email ?? "Usuario";
-  const posicion = usuario.posicion_principal ?? usuario.position ?? "Sin posición asignada";
-  const cargo = usuario.cargo ?? usuario.rol ?? extra.cargo ?? extra.rol ?? "MIEMBRO";
+  const posicion = usuario.posicion_principal ?? usuario.position ?? usuario.rol ?? "Sin posición asignada";
 
   return {
     id: idUsuario,
     id_usuario: idUsuario,
     nombre,
     email: usuario.email ?? "",
-    cargo,
-    rol: cargo,
+    rol: posicion,
     posicion_principal: posicion,
     estado_registro: usuario.estado_registro ?? "ACTIVO",
     timezone: usuario.timezone,
@@ -87,10 +85,6 @@ export function toProjectCard(proyecto = {}, members = []) {
   return {
     id: idProyecto,
     id_proyecto: idProyecto,
-    nombre: proyecto.nombre ?? proyecto.name ?? `Proyecto #${idProyecto ?? "N/D"}`,
-    descripcion: proyecto.descripcion ?? proyecto.description ?? "Sin descripción del proyecto.",
-    estado_registro: estado,
-    raw: proyecto,
     name: proyecto.nombre ?? proyecto.name ?? `Proyecto #${idProyecto ?? "N/D"}`,
     key: proyecto.key ?? `PROY-${idProyecto ?? "N/D"}`,
     initials: proyecto.initials ?? `P${idProyecto ?? ""}`,
@@ -247,53 +241,108 @@ export function buildTicketCreatePayload(formData, reporterId = null) {
 }
 
 export function unwrapProyectoMiembro(row = {}) {
-  const usuario = row.usuario ?? row.user ?? row.usuarios ?? row.Usuario ?? row;
-  const cargo = row.cargo ?? row.rol ?? usuario.cargo ?? usuario.rol ?? "MIEMBRO";
+  const usuario = row.usuario ?? row.user ?? row;
 
   return toMember(usuario, {
-    id: usuario.id_usuario ?? row.id_usuario ?? row.user_id ?? row.id,
-    id_usuario: usuario.id_usuario ?? row.id_usuario ?? row.user_id ?? row.id,
-    id_asignacion: row.id_asignacion ?? row.id_proyecto_asignacion ?? row.id,
-    id_proyecto: row.id_proyecto,
-    cargo,
-    rol: cargo,
+    id: usuario.id_usuario ?? row.id_usuario,
+    id_usuario: usuario.id_usuario ?? row.id_usuario,
+    cargo: row.cargo ?? usuario.cargo ?? "MIEMBRO",
+    rol: row.cargo ?? usuario.posicion_principal ?? "MIEMBRO",
     estado_registro: row.estado_registro ?? usuario.estado_registro ?? "ACTIVO",
   });
+}
+
+
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value;
+  return [];
+}
+
+function pickTicketAssignments(ticket = {}) {
+  return normalizeArray(ticket.asignaciones ?? ticket.assignments ?? ticket.proyecto_asignaciones);
+}
+
+function pickTicketUpdates(ticket = {}) {
+  const directUpdates = normalizeArray(
+    ticket.actualizaciones ?? ticket.updates ?? ticket.ticket_actualizaciones
+  );
+
+  const assignmentUpdates = pickTicketAssignments(ticket).flatMap((assignment) =>
+    normalizeArray(
+      assignment.actualizaciones ?? assignment.updates ?? assignment.ticket_actualizaciones
+    ).map((update) => ({ ...update, asignacion: assignment }))
+  );
+
+  return [...directUpdates, ...assignmentUpdates];
+}
+
+export function toTicketActivities(ticket = {}, currentUser = null) {
+  return pickTicketUpdates(ticket)
+    .map((update, index) => {
+      const assignment = update.asignacion ?? update.assignment ?? {};
+      const usuario = update.usuario ?? update.user ?? assignment.usuario ?? currentUser ?? {};
+      const userName = usuario.nombre ?? usuario.name ?? usuario.email ?? "Usuario";
+      const comment = update.actualizacion ?? update.comentario ?? update.comment ?? update.descripcion ?? "";
+      const status = update.status ?? update.estado ?? null;
+
+      return {
+        id: update.id_actualizacion ?? update.id ?? `${comment}-${index}`,
+        user: {
+          name: userName,
+          avatarUrl: usuario.avatarUrl ?? usuario.urlProfile ?? null,
+          initials: initialsFromName(userName),
+        },
+        action: status ? "cambió el estado" : "comentó",
+        date: formatDateTime(update.fecha_creacion ?? update.createdAt ?? update.actualizado_en),
+        comment,
+        status: status ? formatDbLabel(status) : null,
+      };
+    })
+    .filter((activity) => activity.comment || activity.status);
 }
 
 export function toIssueDetail(ticket = {}, currentUser = null) {
   if (!ticket) return buildEmptyIssueDetail(currentUser);
 
   const idTicket = ticket.id_ticket ?? ticket.id;
+  const idProyecto = ticket.id_proyecto ?? ticket.proyecto?.id_proyecto ?? ticket.proyecto?.id;
   const title = ticket.nombre ?? ticket.title ?? "Ticket sin título";
   const statusValue = ticket.status ?? "PENDIENTE";
   const priorityValue = ticket.prioridad ?? "MEDIA";
-  const assignments = ticket.asignaciones ?? ticket.asignaciones_ticket ?? ticket.assignments ?? [];
-  const firstAssignment = Array.isArray(assignments) ? assignments[0] : null;
-  const assignee = firstAssignment?.usuario ?? firstAssignment?.user ?? ticket.usuario ?? ticket.assignee ?? currentUser;
-  const assigneeName = assignee?.nombre ?? assignee?.email ?? "Sin asignar";
+  const assignments = pickTicketAssignments(ticket);
+  const firstAssignment = assignments[0] ?? null;
+  const idAsignacion =
+    ticket.id_asignacion ?? firstAssignment?.id_asignacion ?? firstAssignment?.id ?? null;
+  const assignee = firstAssignment?.usuario ?? ticket.usuario ?? ticket.assignee ?? currentUser;
+  const assigneeName = assignee?.nombre ?? assignee?.name ?? assignee?.email ?? "Sin asignar";
+  const projectId = idProyecto ?? firstAssignment?.id_proyecto;
 
   return {
+    id: idTicket,
     id_ticket: idTicket,
-    id_asignacion: firstAssignment?.id_asignacion ?? firstAssignment?.id ?? ticket.id_asignacion ?? null,
-    id_proyecto: ticket.id_proyecto ?? firstAssignment?.id_proyecto ?? ticket.proyecto?.id_proyecto ?? null,
+    id_proyecto: projectId,
+    id_usuario: ticket.id_usuario ?? firstAssignment?.id_usuario ?? assignee?.id_usuario ?? assignee?.id,
+    id_asignacion: idAsignacion,
+    raw: ticket,
     key: `TCK-${idTicket ?? "N/D"}`,
     workspace: "Workspace principal",
-    projectName: ticket.proyecto?.nombre ?? `Proyecto #${ticket.id_proyecto ?? firstAssignment?.id_proyecto ?? "N/D"}`,
-    projectShortName: `PROY-${ticket.id_proyecto ?? firstAssignment?.id_proyecto ?? "N/D"}`,
+    projectName: ticket.proyecto?.nombre ?? `Proyecto #${projectId ?? "N/D"}`,
+    projectShortName: `PROY-${projectId ?? "N/D"}`,
     title,
+    nombre: title,
     type: "Ticket",
     status: formatDbLabel(statusValue),
     statusValue,
     priority: formatDbLabel(priorityValue),
     priorityValue,
+    descripcion: ticket.descripcion ?? ticket.description ?? "",
     createdAt: `Creado: ${formatDateTime(ticket.fecha_creacion)}`,
     createdDate: formatDateTime(ticket.fecha_creacion),
     updatedAt: formatDateTime(ticket.actualizado_en ?? ticket.fecha_creacion),
     estado_registro: ticket.estado_registro ?? "ACTIVO",
     assignee: {
       name: assigneeName,
-      role: assignee?.posicion_principal ?? "N/A",
+      role: assignee?.posicion_principal ?? firstAssignment?.cargo ?? "N/A",
       avatarUrl: assignee?.avatarUrl ?? assignee?.urlProfile ?? null,
       initials: initialsFromName(assigneeName),
     },
@@ -303,7 +352,7 @@ export function toIssueDetail(ticket = {}, currentUser = null) {
       initials: initialsFromName(currentUser?.nombre ?? currentUser?.email ?? "Pendiente"),
     },
     description: {
-      paragraphs: [ticket.descripcion || "Sin descripción."],
+      paragraphs: [ticket.descripcion || ticket.description || "Sin descripción."],
       points: Array.isArray(ticket.tasks) ? ticket.tasks : [],
       acceptanceCriteria: Array.isArray(ticket.acceptanceCriteria) ? ticket.acceptanceCriteria : [],
     },

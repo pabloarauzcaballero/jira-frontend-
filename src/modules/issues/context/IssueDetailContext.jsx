@@ -22,9 +22,8 @@ export function IssueDetailProvider({
           label: "Editar",
           icon: "edit",
           endpoint: API_ENDPOINTS.tickets.update,
-          method: "PATCH",
+          method: "PUT",
           onExecute: () => onEdit?.(issue),
-          successMessage: "Acción de edición preparada.",
         },
         {
           id: "ticket.detail.changeStatus",
@@ -34,7 +33,6 @@ export function IssueDetailProvider({
           method: "PATCH",
           className: "btn btn-sm btn-primary d-flex align-items-center gap-1",
           onExecute: () => onChangeStatus?.(issue),
-          successMessage: "Cambio de estado preparado.",
         },
         {
           id: "ticket.detail.delete",
@@ -61,8 +59,6 @@ export function IssueDetailProvider({
           method: "POST",
           className: "btn btn-sm btn-primary",
           onExecute: (payload) => onPostComment?.(payload.comment),
-          successMessage: "Actualización preparada para ticket_actualizacion.",
-          showPayloadOnSuccess: true,
         },
       ],
       navigation: [

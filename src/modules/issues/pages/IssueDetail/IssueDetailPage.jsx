@@ -5,10 +5,23 @@ import DescriptionCard from "../../components/IssueDetail/DescriptionCard";
 import ActivityCard from "../../components/IssueDetail/ActivityCard";
 import StatusAssigneeCard from "../../components/IssueDetail/StatusAssigneeCard";
 import DetailsCard from "../../components/IssueDetail/DetailsCard";
+import EditTicketModal from "../../components/IssueDetail/EditTicketModal";
+import ChangeStatusModal from "../../components/IssueDetail/ChangeStatusModal";
 import { IssueDetailProvider, useIssueDetailContext } from "../../context/IssueDetailContext";
 import LoadingState from "../../../../shared/components/loading/LoadingState";
 
-function IssueDetailContent() {
+function IssueDetailContent({
+  priorities = [],
+  statuses = [],
+  isEditOpen = false,
+  isStatusOpen = false,
+  isSavingTicket = false,
+  isChangingStatus = false,
+  onCloseEdit,
+  onCloseStatus,
+  onSubmitEdit,
+  onSubmitStatus,
+}) {
   const { issue, currentUser, activities } = useIssueDetailContext();
 
   return (
@@ -28,6 +41,25 @@ function IssueDetailContent() {
           <DetailsCard issue={issue} />
         </aside>
       </div>
+    
+
+      <EditTicketModal
+        issue={issue}
+        priorities={priorities}
+        isOpen={isEditOpen}
+        isSaving={isSavingTicket}
+        onClose={onCloseEdit}
+        onSubmit={onSubmitEdit}
+      />
+
+      <ChangeStatusModal
+        issue={issue}
+        statuses={statuses}
+        isOpen={isStatusOpen}
+        isSaving={isChangingStatus}
+        onClose={onCloseStatus}
+        onSubmit={onSubmitStatus}
+      />
     </section>
   );
 }
@@ -39,7 +71,7 @@ export default function IssueDetailPage(props) {
 
   return (
     <IssueDetailProvider {...props}>
-      <IssueDetailContent />
+      <IssueDetailContent {...props} />
     </IssueDetailProvider>
   );
 }

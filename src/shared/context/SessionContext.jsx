@@ -38,7 +38,7 @@ function readStoredSession() {
     }
 
     return storedSession;
-  } catch {
+  } catch (_error) {
     return {};
   }
 }
@@ -52,7 +52,7 @@ function persistSession(session) {
     } else {
       window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
     }
-  } catch {
+  } catch (_error) {
     // Local storage can fail in private mode. The app still works in memory.
   }
 }

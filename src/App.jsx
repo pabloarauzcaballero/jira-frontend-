@@ -30,6 +30,7 @@ import {
   buildEmptyTicketsByStatus,
   buildProfileDataFromUser,
   groupTicketsByStatus,
+  toTicketActivities,
   splitProjectCards,
   toIssueDetail,
   toMember,
@@ -52,7 +53,8 @@ import {
   addProyectoMiembro,
   createProyecto,
   createTicket,
-  createTicketUpdate,
+  createTicketUpdate as createTicketUpdateRequest,
+  changeTicketStatus as changeTicketStatusRequest,
   getTicket,
   listProyectoMiembros,
   listProyectos,
@@ -61,6 +63,7 @@ import {
   removeProyectoMiembro,
   updateProyecto,
   updateProyectoMiembro,
+  updateTicket,
   updateUsuario,
 } from "./shared/services/jiraApiService";
 
@@ -166,10 +169,23 @@ function PublicOnlyRoute({ isCheckingSession = false }) {
   return <Outlet />;
 }
 
-function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorkspaceLoading = false, onPostComment }) {
+function IssueDetailRoute({
+  tickets = [],
+  currentUser,
+  isWorkspaceLoading = false,
+  priorities = [],
+  statuses = [],
+  onUpdateTicket,
+  onChangeTicketStatus,
+  onPostTicketComment,
+}) {
   const { idTicket } = useParams();
   const [remoteTicket, setRemoteTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isSavingTicket, setIsSavingTicket] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   const localTicket = useMemo(() => {
     if (!idTicket || idTicket === "pending") return tickets[0] ?? null;
@@ -177,45 +193,109 @@ function IssueDetailRoute({ tickets = [], currentUser, activities = [], isWorksp
     return tickets.find((ticket) => String(getIdTicket(ticket)) === String(idTicket)) ?? null;
   }, [idTicket, tickets]);
 
+  const loadTicketDetail = useCallback(async () => {
+    if (!idTicket || idTicket === "pending") {
+      setRemoteTicket(null);
+      return null;
+    }
+
+    try {
+      setIsLoading(true);
+      const ticket = await getTicket(idTicket);
+      setRemoteTicket(ticket ?? null);
+      return ticket ?? null;
+    } catch (_error) {
+      setRemoteTicket(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [idTicket]);
+
   useEffect(() => {
     let isMounted = true;
 
-    async function loadTicketDetail() {
-      if (!idTicket || idTicket === "pending") {
-        setRemoteTicket(null);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const ticket = await getTicket(idTicket);
-        if (isMounted) setRemoteTicket(ticket);
-      } catch {
-        if (isMounted) setRemoteTicket(null);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+    async function runLoad() {
+      if (!isMounted) return;
+      await loadTicketDetail();
     }
 
-    loadTicketDetail();
+    runLoad();
 
     return () => {
       isMounted = false;
     };
-  }, [idTicket, localTicket]);
+  }, [loadTicketDetail]);
+
+  const selectedTicket = remoteTicket ?? localTicket;
 
   const issue = useMemo(() => {
-    if (isLoading) return buildEmptyIssueDetail(currentUser);
-    return toIssueDetail(remoteTicket ?? localTicket, currentUser);
-  }, [currentUser, isLoading, localTicket, remoteTicket]);
+    if (isLoading && !selectedTicket) return buildEmptyIssueDetail(currentUser);
+    return toIssueDetail(selectedTicket, currentUser);
+  }, [currentUser, isLoading, selectedTicket]);
+
+  const ticketActivities = useMemo(
+    () => toTicketActivities(selectedTicket, currentUser),
+    [currentUser, selectedTicket]
+  );
+
+  async function handleSubmitEdit(payload) {
+    const id = issue.id_ticket ?? issue.id;
+    if (!id) return false;
+
+    try {
+      setIsSavingTicket(true);
+      const updatedTicket = await onUpdateTicket?.(id, payload);
+      setRemoteTicket((currentTicket) => ({ ...(currentTicket ?? selectedTicket ?? {}), ...(updatedTicket ?? payload) }));
+      await loadTicketDetail();
+      setIsEditOpen(false);
+      return true;
+    } finally {
+      setIsSavingTicket(false);
+    }
+  }
+
+  async function handleSubmitStatus(nextStatus) {
+    const id = issue.id_ticket ?? issue.id;
+    if (!id) return false;
+
+    try {
+      setIsChangingStatus(true);
+      const updatedTicket = await onChangeTicketStatus?.(id, nextStatus);
+      setRemoteTicket((currentTicket) => ({ ...(currentTicket ?? selectedTicket ?? {}), ...(updatedTicket ?? {}), status: nextStatus }));
+      await loadTicketDetail();
+      setIsStatusOpen(false);
+      return true;
+    } finally {
+      setIsChangingStatus(false);
+    }
+  }
+
+  async function handlePostComment(comment) {
+    const result = await onPostTicketComment?.(issue, comment);
+    if (result !== false) await loadTicketDetail();
+    return result;
+  }
 
   return (
     <IssueDetailPage
       issue={issue}
       currentUser={currentUser}
-      activities={activities}
+      activities={ticketActivities}
+      priorities={priorities}
+      statuses={statuses}
       isLoading={isLoading || isWorkspaceLoading}
-      onPostComment={(comment) => onPostComment?.(issue, comment)}
+      isEditOpen={isEditOpen}
+      isStatusOpen={isStatusOpen}
+      isSavingTicket={isSavingTicket}
+      isChangingStatus={isChangingStatus}
+      onEdit={() => setIsEditOpen(true)}
+      onChangeStatus={() => setIsStatusOpen(true)}
+      onCloseEdit={() => setIsEditOpen(false)}
+      onCloseStatus={() => setIsStatusOpen(false)}
+      onSubmitEdit={handleSubmitEdit}
+      onSubmitStatus={handleSubmitStatus}
+      onPostComment={handlePostComment}
     />
   );
 }
@@ -253,13 +333,9 @@ function AppRoutes() {
         const sessionResult = await refreshSessionRequest().catch(() => meRequest());
         let normalizedSession = normalizeAuthResponse(sessionResult.data);
 
-        if (normalizedSession.accessToken) {
-          persistAccessToken(normalizedSession.accessToken);
-        }
-
         if (!normalizedSession.user) {
           const meResult = await meRequest();
-          normalizedSession = normalizeAuthResponse(meResult.data, normalizedSession.user);
+          normalizedSession = normalizeAuthResponse(meResult.data);
         }
 
         if (!normalizedSession.user) {
@@ -270,7 +346,7 @@ function AppRoutes() {
           persistAccessToken(normalizedSession.accessToken);
           setAuthSession(normalizedSession);
         }
-      } catch {
+      } catch (_error) {
         clearAccessToken();
         logout();
       } finally {
@@ -339,7 +415,6 @@ function AppRoutes() {
   }, [active.id_proyecto, auth.isAuthenticated, isCheckingSession, setActiveProject, showWarning]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     reloadWorkspace();
   }, [reloadWorkspace]);
 
@@ -367,31 +442,16 @@ function AppRoutes() {
   }, [active.id_proyecto, proyectos]);
 
   const activeProjectId = getIdProyecto(activeProject) ?? active.id_proyecto ?? null;
-  const activeProjectMembers = useMemo(
-    () => miembrosByProyecto[activeProjectId] ?? [],
-    [activeProjectId, miembrosByProyecto]
-  );
+  const activeProjectMembers = miembrosByProyecto[activeProjectId] ?? [];
 
   const currentMember = useMemo(
-    () => (currentUser ? toMember(currentUser, { ticketsAsignados: [], cargo: "OWNER", rol: "OWNER" }) : null),
+    () => (currentUser ? toMember(currentUser, { ticketsAsignados: [] }) : null),
     [currentUser]
   );
 
-  const usersByProject = useMemo(() => {
-    return Object.fromEntries(
-      Object.entries(miembrosByProyecto).map(([idProyecto, miembros]) => [
-        idProyecto,
-        miembros
-          .filter((member) => member.estado_registro !== "ELIMINADO")
-          .map(toUserOption)
-          .filter((option) => option.value),
-      ])
-    );
-  }, [miembrosByProyecto]);
-
   const routeData = useMemo(() => {
-    const teamMembers = activeProjectMembers;
-    const teamProfiles = teamMembers.length > 0 ? teamMembers : currentMember ? [currentMember] : [];
+    const fallbackMembers = currentMember ? [currentMember] : [];
+    const teamMembers = activeProjectMembers.length > 0 ? activeProjectMembers : fallbackMembers;
     const projectsWithMembers = proyectos.map((proyecto) => ({
       ...proyecto,
       members: miembrosByProyecto[getIdProyecto(proyecto)] ?? [],
@@ -400,10 +460,8 @@ function AppRoutes() {
 
     return {
       users: userOptions,
-      usersByProject,
       members: teamMembers,
-      teamProfiles,
-      createProjectInitialMembers: currentMember ? [currentMember] : [],
+      teamProfiles: teamMembers,
       statuses: ticketStatusOptions,
       priorities: ticketPriorityOptions,
       ticketsByStatus:
@@ -419,28 +477,17 @@ function AppRoutes() {
       isSyncing,
       isLoading: isSyncing && !hasLoadedWorkspace,
     };
-  }, [activeProjectMembers, currentMember, currentUser, hasLoadedWorkspace, isSyncing, miembrosByProyecto, projectOptions, proyectos, tickets, userOptions, usersByProject]);
+  }, [activeProjectMembers, currentMember, currentUser, hasLoadedWorkspace, isSyncing, miembrosByProyecto, projectOptions, proyectos, tickets, userOptions]);
 
   const navigateByView = useCallback(
-    (viewKey, runtimePayload = {}) => {
-      const idProyecto = runtimePayload?.id_proyecto ?? runtimePayload?.id;
-      const idTicket = runtimePayload?.id_ticket;
-
-      if (idProyecto) {
-        setActiveProject(idProyecto);
-      }
-
-      if (idTicket) {
-        setActiveTicket(idTicket);
-      }
-
+    (viewKey) => {
       const firstTicketId = getIdTicket(tickets[0]);
-      const issuePath = idTicket ? `/issues/${idTicket}` : firstTicketId ? `/issues/${firstTicketId}` : "/issues/pending";
+      const issuePath = firstTicketId ? `/issues/${firstTicketId}` : "/issues/pending";
       const path = viewKey === "issue-detail" ? issuePath : ROUTE_BY_VIEW[viewKey] ?? viewKey;
 
       navigate(path || "/board");
     },
-    [navigate, setActiveProject, setActiveTicket, tickets]
+    [navigate, tickets]
   );
 
   const handleLogin = useCallback(
@@ -454,20 +501,19 @@ function AppRoutes() {
           timezone: "America/La_Paz",
         });
 
-        if (normalized.accessToken) {
-          persistAccessToken(normalized.accessToken);
-        }
+        persistAccessToken(normalized.accessToken);
 
         const meResult = await meRequest().catch(() => null);
         if (meResult?.data) {
+          const normalizedMe = normalizeAuthResponse(meResult.data, normalized.user);
           normalized = {
             ...normalized,
-            ...normalizeAuthResponse(meResult.data, normalized.user),
-            accessToken: normalizeAuthResponse(meResult.data).accessToken ?? normalized.accessToken,
+            ...normalizedMe,
+            accessToken: normalizedMe.accessToken ?? normalized.accessToken,
           };
+          persistAccessToken(normalized.accessToken);
         }
 
-        persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
 
         showSuccess({
@@ -500,21 +546,19 @@ function AppRoutes() {
         });
 
         let normalized = normalizeAuthResponse(loginResult.data, payload);
-
-        if (normalized.accessToken) {
-          persistAccessToken(normalized.accessToken);
-        }
+        persistAccessToken(normalized.accessToken);
 
         const meResult = await meRequest().catch(() => null);
         if (meResult?.data) {
+          const normalizedMe = normalizeAuthResponse(meResult.data, normalized.user);
           normalized = {
             ...normalized,
-            ...normalizeAuthResponse(meResult.data, normalized.user),
-            accessToken: normalizeAuthResponse(meResult.data).accessToken ?? normalized.accessToken,
+            ...normalizedMe,
+            accessToken: normalizedMe.accessToken ?? normalized.accessToken,
           };
+          persistAccessToken(normalized.accessToken);
         }
 
-        persistAccessToken(normalized.accessToken);
         setAuthSession(normalized);
 
         showSuccess({
@@ -633,7 +677,7 @@ function AppRoutes() {
         setIsSavingProject(false);
       }
     },
-    [currentUser, reloadWorkspace, showError, showSuccess]
+    [currentUser?.id, currentUser?.id_usuario, reloadWorkspace, showError, showSuccess]
   );
 
   const handleCreateTicket = useCallback(
@@ -673,48 +717,82 @@ function AppRoutes() {
     [navigate, reloadWorkspace, setActiveTicket, showError, showSuccess]
   );
 
-  const handleCreateTicketForMember = useCallback(
-    (member) => {
-      if (activeProjectId) {
-        setActiveProject(activeProjectId);
+  const handleUpdateTicket = useCallback(
+    async (idTicket, payload) => {
+      try {
+        const updatedTicket = await updateTicket(idTicket, payload);
+        await reloadWorkspace();
+        showSuccess({
+          title: "Ticket actualizado",
+          message: "Los cambios del ticket fueron guardados correctamente.",
+        });
+        return updatedTicket ?? { id_ticket: idTicket, ...payload };
+      } catch (error) {
+        showError({
+          title: "No se pudo editar el ticket",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de actualización del ticket.",
+        });
+        throw error;
       }
-
-      if (member?.id_usuario) {
-        // El formulario de ticket filtrará a los miembros del proyecto; el usuario puede confirmar o cambiar el asignado.
-      }
-
-      navigate("/issues/new");
     },
-    [activeProjectId, navigate, setActiveProject]
+    [reloadWorkspace, showError, showSuccess]
   );
 
-  const handlePostTicketUpdate = useCallback(
+  const handleChangeTicketStatus = useCallback(
+    async (idTicket, status) => {
+      try {
+        const updatedTicket = await changeTicketStatusRequest(idTicket, status);
+        await reloadWorkspace();
+        showSuccess({
+          title: "Estado actualizado",
+          message: "El estado del ticket fue actualizado correctamente.",
+        });
+        return updatedTicket ?? { id_ticket: idTicket, status };
+      } catch (error) {
+        showError({
+          title: "No se pudo cambiar el estado",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de cambio de estado del ticket.",
+        });
+        throw error;
+      }
+    },
+    [reloadWorkspace, showError, showSuccess]
+  );
+
+  const handlePostTicketComment = useCallback(
     async (issue, comment) => {
       const idAsignacion = issue?.id_asignacion;
 
       if (!idAsignacion) {
-        showError({
-          title: "No se pudo registrar la actualización",
-          message: "El ticket no tiene una asignación activa. Revisa que el detalle del ticket devuelva asignaciones.",
+        showWarning({
+          title: "Falta id_asignacion",
+          message:
+            "Para registrar una actualización no voy a adivinar la asignación. El detalle del ticket debe devolver asignaciones con id_asignacion.",
+          details: {
+            expectedEndpoint: "/api/tickets/asignaciones/:idAsignacion/actualizaciones",
+            ticket: issue?.id_ticket ?? issue?.id,
+          },
         });
-        return;
+        return false;
       }
 
       try {
-        await createTicketUpdate(idAsignacion, comment);
+        const createdUpdate = await createTicketUpdateRequest(idAsignacion, comment);
         await reloadWorkspace();
         showSuccess({
-          title: "Actualización registrada",
-          message: "El comentario fue guardado en la asignación del ticket.",
+          title: "Comentario registrado",
+          message: "La actualización del ticket fue guardada correctamente.",
         });
+        return createdUpdate ?? true;
       } catch (error) {
         showError({
-          title: "No se pudo registrar la actualización",
-          message: error?.response?.data?.message || error.message || "Revisa el endpoint de actualizaciones.",
+          title: "No se pudo registrar el comentario",
+          message: error?.response?.data?.message || error.message || "Revisa el endpoint de actualizaciones del ticket.",
         });
+        throw error;
       }
     },
-    [reloadWorkspace, showError, showSuccess]
+    [reloadWorkspace, showError, showSuccess, showWarning]
   );
 
   const handleAddMember = useCallback(
@@ -829,7 +907,7 @@ function AppRoutes() {
   const handleLogout = useCallback(async () => {
     try {
       await logoutRequest();
-    } catch {
+    } catch (_error) {
       // Aunque falle la llamada, limpiamos la sesión local.
     }
 
@@ -896,7 +974,7 @@ function AppRoutes() {
               element={
                 <CreateProjectPage
                   users={routeData.users}
-                  initialMembers={routeData.createProjectInitialMembers}
+                  initialMembers={routeData.members}
                   onSubmit={handleCreateProject}
                   onCancel={() => navigate("/projects")}
                   isLoading={routeData.isLoading}
@@ -907,18 +985,19 @@ function AppRoutes() {
               path="/projects/members"
               element={
                 <ProjectMembersPage
+                  project={activeProject}
                   projectName={activeProject?.nombre ?? "Proyecto pendiente"}
                   projectDescription={
                     activeProject?.descripcion ??
                     "Selecciona un proyecto para revisar y administrar sus miembros."
                   }
-                  project={activeProject}
                   members={routeData.members}
                   users={routeData.users}
                   onAddMember={handleAddMember}
                   onUpdateMember={handleUpdateMember}
                   onUnlinkMember={handleUnlinkMember}
-                  onAddRequest={handleCreateTicketForMember}
+                  onEditProject={handleEditProject}
+                  isSavingProject={isSavingProject}
                   isLoading={routeData.isLoading}
                 />
               }
@@ -929,7 +1008,6 @@ function AppRoutes() {
                 <CreateIssuePage
                   projects={routeData.projectOptions}
                   users={routeData.users}
-                  usersByProject={routeData.usersByProject}
                   priorities={routeData.priorities}
                   statuses={routeData.statuses}
                   onSubmit={handleCreateTicket}
@@ -944,9 +1022,12 @@ function AppRoutes() {
                 <IssueDetailRoute
                   tickets={tickets}
                   currentUser={currentUser}
-                  activities={routeData.activities}
+                  priorities={routeData.priorities}
+                  statuses={routeData.statuses}
                   isWorkspaceLoading={routeData.isLoading}
-                  onPostComment={handlePostTicketUpdate}
+                  onUpdateTicket={handleUpdateTicket}
+                  onChangeTicketStatus={handleChangeTicketStatus}
+                  onPostTicketComment={handlePostTicketComment}
                 />
               }
             />
